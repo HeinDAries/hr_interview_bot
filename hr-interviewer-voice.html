@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HR Interview AI — Voice</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0f0f0f;--surface:#181818;--surface2:#222;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f0ede8;--muted:#777;--accent:#c9a96e;--accent2:#e8d5b0;--danger:#e05555;--green:#4caf7d;--radius:14px}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.6;overflow:hidden}
+
+/* SETUP */
+#setup-screen{height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;animation:fadeIn .6s ease}
+.setup-card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:2.5rem;max-width:460px;width:100%}
+.logo-wrap{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem}
+.logo-mark{width:44px;height:44px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-mark svg{width:22px;height:22px;fill:#1a1a1a}
+.logo-title{font-family:'DM Serif Display',serif;font-size:20px;font-weight:400}
+.logo-sub{font-size:12px;color:var(--muted)}
+.field{margin-bottom:1rem}
+.field label{display:block;font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+.field input,.field select{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:11px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:300;outline:none;transition:border-color .2s}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field select option{background:#222}
+.api-row{display:flex;gap:8px}
+.api-row input{flex:1}
+.api-toggle{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;color:var(--muted);cursor:pointer;font-size:12px;white-space:nowrap;transition:all .2s;font-family:'DM Sans',sans-serif}
+.api-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.demo-note{background:#1e1a14;border:1px solid #3a2e1a;border-radius:9px;padding:9px 13px;margin-bottom:1rem;font-size:12px;color:var(--accent);line-height:1.5}
+.start-btn{width:100%;padding:13px;background:var(--accent);border:none;border-radius:10px;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.start-btn:hover{background:var(--accent2);transform:translateY(-1px)}
+.start-btn svg{width:16px;height:16px;fill:#1a1a1a}
+
+/* INTERVIEW SCREEN */
+#interview-screen{height:100vh;display:none;flex-direction:column}
+.iheader{padding:.9rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.cinfo{display:flex;align-items:center;gap:10px}
+.avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#8b5e2a);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:500;color:#1a1a1a;flex-shrink:0}
+.cname{font-size:13px;font-weight:500}
+.crole{font-size:11px;color:var(--muted)}
+.hright{display:flex;align-items:center;gap:8px}
+.demo-badge{background:#3a2e1a;border:1px solid #5a4a2a;border-radius:20px;padding:3px 9px;font-size:11px;color:var(--accent);font-weight:500}
+.qpill{background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:4px 11px;font-size:12px;color:var(--muted)}
+.qpill span{color:var(--accent);font-weight:500}
+.end-btn{background:transparent;border:1px solid var(--border2);border-radius:8px;padding:5px 12px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s}
+.end-btn:hover{border-color:var(--danger);color:var(--danger)}
+
+/* CHAT */
+.chat-area{flex:1;overflow-y:auto;padding:1.2rem 1.4rem;display:flex;flex-direction:column;gap:.8rem;scroll-behavior:smooth}
+.chat-area::-webkit-scrollbar{width:3px}
+.chat-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.msg{display:flex;gap:8px;animation:msgIn .25s ease;max-width:680px}
+.msg.user{flex-direction:row-reverse;align-self:flex-end}
+.msg.ai{align-self:flex-start}
+.msg-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;margin-top:2px}
+.msg.ai .msg-av{background:linear-gradient(135deg,var(--accent),#8b5e2a);color:#1a1a1a;font-weight:500}
+.msg.user .msg-av{background:var(--surface2);border:1px solid var(--border2);color:var(--muted)}
+.msg-bubble{padding:10px 14px;border-radius:13px;font-size:13.5px;line-height:1.6;max-width:500px}
+.msg.ai .msg-bubble{background:var(--surface);border:1px solid var(--border);border-bottom-left-radius:3px;color:var(--text)}
+.msg.user .msg-bubble{background:var(--accent);color:#1a1a1a;border-bottom-right-radius:3px;font-weight:400}
+.typing-bubble{background:var(--surface);border:1px solid var(--border);border-radius:13px;border-bottom-left-radius:3px;padding:12px 16px;display:flex;gap:4px;align-items:center}
+.dot{width:5px;height:5px;background:var(--muted);border-radius:50%;animation:bounce 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+
+/* VOICE PANEL */
+.voice-panel{flex-shrink:0;border-top:1px solid var(--border);padding:1rem 1.4rem 1.4rem}
+.voice-status{text-align:center;font-size:12px;color:var(--muted);margin-bottom:.9rem;min-height:18px;transition:all .3s}
+.voice-status.speaking{color:var(--accent)}
+.voice-status.listening{color:var(--green)}
+.voice-status.processing{color:var(--muted)}
+
+.voice-controls{display:flex;align-items:center;justify-content:center;gap:16px}
+
+/* MIC BUTTON */
+.mic-btn{width:64px;height:64px;border-radius:50%;border:2px solid var(--border2);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative}
+.mic-btn svg{width:24px;height:24px;fill:var(--muted);transition:fill .2s}
+.mic-btn:hover{border-color:var(--accent)}
+.mic-btn.listening{border-color:var(--green);background:rgba(76,175,125,0.08);animation:pulse-green 1.5s infinite}
+.mic-btn.listening svg{fill:var(--green)}
+.mic-btn.speaking-ai{border-color:var(--accent);background:rgba(201,169,110,0.08);animation:pulse-gold 1.5s infinite}
+.mic-btn.speaking-ai svg{fill:var(--accent)}
+.mic-btn:disabled{opacity:.3;cursor:not-allowed;animation:none}
+
+/* WAVEFORM RING */
+.ring{position:absolute;width:64px;height:64px;border-radius:50%;border:2px solid transparent;top:-2px;left:-2px;pointer-events:none}
+.ring.active-green{border-color:var(--green);animation:ring-expand 1s ease-out infinite}
+.ring.active-gold{border-color:var(--accent);animation:ring-expand 1s ease-out infinite}
+
+.side-btns{display:flex;flex-direction:column;gap:8px}
+.side-btn{background:var(--surface2);border:1px solid var(--border2);border-radius:9px;padding:7px 14px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.side-btn:hover{border-color:var(--border2);color:var(--text)}
+.side-btn.active{border-color:var(--accent);color:var(--accent)}
+
+/* transcript toggle */
+.transcript-row{display:flex;gap:8px;align-items:flex-end;margin-top:.8rem}
+#text-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:9px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:300;outline:none;resize:none;max-height:100px;line-height:1.5;transition:border-color .2s;display:none}
+#text-input:focus{border-color:var(--accent)}
+#text-input::placeholder{color:var(--muted)}
+.send-txt-btn{background:var(--accent);border:none;border-radius:9px;width:36px;height:36px;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
+.send-txt-btn:hover{background:var(--accent2)}
+.send-txt-btn svg{width:15px;height:15px;fill:#1a1a1a}
+
+/* SUMMARY */
+#summary-screen{height:100vh;display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem;animation:fadeIn .6s ease}
+.sum-card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:2.5rem;max-width:500px;width:100%;text-align:center}
+.score-ring{width:84px;height:84px;border-radius:50%;border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 1.4rem;flex-direction:column}
+.score-ring .snum{font-family:'DM Serif Display',serif;font-size:26px;color:var(--accent);line-height:1}
+.score-ring .slbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.sum-card h2{font-family:'DM Serif Display',serif;font-size:21px;font-weight:400;margin-bottom:5px}
+.sum-card .sub{color:var(--muted);font-size:12px;margin-bottom:1.5rem}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1.4rem}
+.sbox{background:var(--surface2);border-radius:9px;padding:10px 6px}
+.sbox .sv{font-size:18px;font-weight:500;color:var(--accent);display:block}
+.sbox .sk{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.dl-btn{width:100%;padding:12px;background:var(--accent);border:none;border-radius:10px;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;margin-bottom:8px;transition:all .2s}
+.dl-btn:hover{background:var(--accent2)}
+.rs-btn{width:100%;padding:11px;background:transparent;border:1px solid var(--border2);border-radius:10px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
+.rs-btn:hover{color:var(--text)}
+
+.float-cloud{position:fixed;bottom:20px;right:20px;width:40px;height:40px;background:var(--surface2);border:1px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;animation:float 3s ease-in-out infinite;z-index:999}
+.float-cloud svg{width:18px;height:18px;fill:var(--muted)}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes msgIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes pulse-green{0%,100%{box-shadow:0 0 0 0 rgba(76,175,125,.3)}50%{box-shadow:0 0 0 8px rgba(76,175,125,0)}}
+@keyframes pulse-gold{0%,100%{box-shadow:0 0 0 0 rgba(201,169,110,.3)}50%{box-shadow:0 0 0 8px rgba(201,169,110,0)}}
+@keyframes ring-expand{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.5);opacity:0}}
+</style>
+</head>
+<body>
+
+<!-- SETUP -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="logo-wrap">
+      <div class="logo-mark"><svg viewBox="0 0 24 24"><path d="M12 1a11 11 0 100 22A11 11 0 0012 1zm-1.5 15.5v-9l7 4.5-7 4.5z"/></svg></div>
+      <div><div class="logo-title">HR Interview AI</div><div class="logo-sub">Voice-powered candidate screening</div></div>
+    </div>
+    <div class="field"><label>Candidate Name</label><input type="text" id="candidate-name" placeholder="e.g. Aung Kyaw Zin" /></div>
+    <div class="field">
+      <label>Role Applied For</label>
+      <select id="role-select">
+        <option>HR Officer</option><option>HR Manager</option><option>Recruitment Specialist</option>
+        <option>Finance Officer</option><option>Finance Manager</option>
+        <option>Accounting Staff</option><option>Admin Officer</option><option>Payroll Officer</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Experience Level</label>
+      <select id="exp-select">
+        <option value="0-1 years">0–1 years (Entry)</option>
+        <option value="2-3 years">2–3 years (Junior)</option>
+        <option value="3-5 years" selected>3–5 years (Mid)</option>
+        <option value="5-8 years">5–8 years (Senior)</option>
+        <option value="8+ years">8+ years (Lead/Manager)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>API Key — leave blank for Demo Mode</label>
+      <div class="api-row">
+        <input type="password" id="api-key" placeholder="sk-... (optional)" />
+        <button class="api-toggle" id="api-toggle-btn" onclick="toggleApiVis()">Show</button>
+      </div>
+    </div>
+    <div class="demo-note">Leave blank for Demo Mode — scripted voice interview + sample Excel export. Add kiro.cheap key for live AI.</div>
+    <button class="start-btn" onclick="startInterview()">
+      <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 3.39-3.4 6-6.91 6s-6.42-2.61-6.91-6H2.1C2.58 14.93 6 18 10 18.93V21h4v-2.07C17.98 18 21.42 14.93 21.9 11H17.9z"/></svg>
+      Start Voice Interview
+    </button>
+  </div>
+</div>
+
+<!-- INTERVIEW -->
+<div id="interview-screen">
+  <div class="iheader">
+    <div class="cinfo">
+      <div class="avatar" id="hdr-avatar">?</div>
+      <div><div class="cname" id="hdr-name">Candidate</div><div class="crole" id="hdr-role">Role</div></div>
+    </div>
+    <div class="hright">
+      <div class="demo-badge" id="demo-badge" style="display:none">DEMO</div>
+      <div class="qpill">Q <span id="q-count">0</span></div>
+      <button class="end-btn" onclick="endInterview()">End &amp; Export</button>
+    </div>
+  </div>
+
+  <div class="chat-area" id="chat-area"></div>
+
+  <div class="voice-panel">
+    <div class="voice-status" id="vstatus">Press the mic to start</div>
+    <div class="voice-controls">
+      <div class="side-btns">
+        <button class="side-btn" id="type-toggle-btn" onclick="toggleTextMode()">Use Text</button>
+        <button class="side-btn" id="skip-btn" onclick="skipSpeech()">Skip TTS</button>
+      </div>
+
+      <button class="mic-btn" id="mic-btn" onclick="handleMicClick()">
+        <div class="ring" id="mic-ring"></div>
+        <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 3.39-3.4 6-6.91 6s-6.42-2.61-6.91-6H2.1C2.58 14.93 6 18 10 18.93V21h4v-2.07C17.98 18 21.42 14.93 21.9 11H17.9z"/></svg>
+      </button>
+
+      <div class="side-btns">
+        <button class="side-btn" id="mute-btn" onclick="toggleMute()">Mute AI</button>
+        <button class="side-btn" onclick="endInterview()">Finish</button>
+      </div>
+    </div>
+
+    <div class="transcript-row">
+      <textarea id="text-input" rows="1" placeholder="Type your answer..." onkeydown="handleTextKey(event)" oninput="autoResize(this)"></textarea>
+      <button class="send-txt-btn" id="send-txt-btn" onclick="sendTextAnswer()">
+        <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div id="summary-screen">
+  <div class="sum-card">
+    <div class="score-ring"><span class="snum" id="final-score">—</span><span class="slbl">/ 100</span></div>
+    <h2 id="sum-name">Interview Complete</h2>
+    <p class="sub" id="sum-sub">Processing...</p>
+    <div class="stats-grid">
+      <div class="sbox"><span class="sv" id="stat-q">0</span><span class="sk">Questions</span></div>
+      <div class="sbox"><span class="sv" id="stat-min">0</span><span class="sk">Minutes</span></div>
+      <div class="sbox"><span class="sv" id="stat-rec">—</span><span class="sk">Verdict</span></div>
+    </div>
+    <button class="dl-btn" onclick="downloadExcel()">Download Excel Report</button>
+    <button class="rs-btn" onclick="restart()">New Interview</button>
+  </div>
+</div>
+
+<div class="float-cloud">
+  <svg viewBox="0 0 24 24"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+</div>
+
+<script>
+// STATE
+var conversationHistory = [];
+var candidateData = {};
+var questionCount = 0;
+var startTime = null;
+var summaryData = null;
+var isEnding = false;
+var isDemoMode = false;
+var demoIndex = 0;
+var isMuted = false;
+var isTextMode = false;
+var isListening = false;
+var isSpeaking = false;
+var recognition = null;
+var currentUtterance = null;
+var pendingTranscript = '';
+
+var API_BASE = 'https://api.kiro.cheap/v1';
+
+// DEMO QUESTIONS
+var DEMO_QS = [
+  function(n,r){ return 'Hey ' + n + ', great to meet you! Thanks for making time today. So tell me — what got you interested in the ' + r + ' role, and give me a quick overview of your background?'; },
+  function(){ return "That's helpful context! Walk me through a typical HR process you own day-to-day — how do you make sure it stays consistent?"; },
+  function(){ return "Got it. So here's a scenario — a manager keeps bypassing an HR policy even after you've reminded them twice. What do you do?"; },
+  function(){ return "Nice approach. If you had to write a disciplinary warning letter from scratch right now, what elements would you make sure to include?"; },
+  function(){ return "Solid. Now imagine an employee comes to you quite upset, saying their performance review was completely unfair. How do you handle that conversation?"; },
+  function(){ return "I like that. How comfortable are you with HR data and reporting? Give me a real example of something you've tracked or analysed and what happened because of it."; },
+  function(){ return "Really useful. Last one — where do you personally see AI fitting into HR over the next few years, and what are you doing to stay ahead of that curve?"; },
+  function(n){ return "That's everything I needed — thank you so much " + n + ", this has genuinely been a great conversation. We'll be in touch with next steps very soon!"; }
+];
+
+var DEMO_SUMMARY = {
+  overall_score: 74, verdict: 'Recommended',
+  summary: 'The candidate demonstrated solid foundational HR knowledge with a good understanding of compliance processes and employee relations. Communication was clear and well-structured throughout.',
+  strengths: ['Clear policy and compliance knowledge', 'Structured conflict resolution approach', 'Good awareness of HR technology trends'],
+  concerns: ['Limited multi-country operations exposure', 'Could strengthen data analytics depth'],
+  competency_scores: {'Communication': 80, 'HR Knowledge': 75, 'Problem Solving': 70, 'Cultural Fit': 78, 'Experience Relevance': 68},
+  recommendation: 'Recommended for second round with hiring manager. Verify multi-country experience at next stage.'
+};
+
+// SETUP UTILS
+function toggleApiVis() {
+  var inp = document.getElementById('api-key');
+  var btn = document.getElementById('api-toggle-btn');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
+}
+
+function getInitials(name) {
+  return name.trim().split(/\s+/).map(function(n){ return n[0]; }).join('').toUpperCase().slice(0,2);
+}
+
+// START
+function startInterview() {
+  var name = document.getElementById('candidate-name').value.trim();
+  var role = document.getElementById('role-select').value;
+  var exp = document.getElementById('exp-select').value;
+  var apiKey = document.getElementById('api-key').value.trim();
+  if (!name) { alert('Please enter candidate name.'); return; }
+
+  isDemoMode = !apiKey;
+  demoIndex = 0;
+  candidateData = { name: name, role: role, exp: exp, apiKey: apiKey };
+  startTime = Date.now();
+  questionCount = 0;
+  conversationHistory = [];
+  isEnding = false;
+  summaryData = null;
+  isMuted = false;
+  isTextMode = false;
+
+  document.getElementById('hdr-avatar').textContent = getInitials(name);
+  document.getElementById('hdr-name').textContent = name;
+  document.getElementById('hdr-role').textContent = role + ' · ' + exp;
+  document.getElementById('q-count').textContent = 0;
+  document.getElementById('chat-area').innerHTML = '';
+  document.getElementById('demo-badge').style.display = isDemoMode ? 'block' : 'none';
+  document.getElementById('setup-screen').style.display = 'none';
+  document.getElementById('interview-screen').style.display = 'flex';
+
+  initSpeechRecognition();
+  setStatus('AI is thinking...', 'processing');
+
+  if (isDemoMode) { triggerDemoResponse(); }
+  else { callAI(null, true); }
+}
+
+// SPEECH RECOGNITION INIT
+function initSpeechRecognition() {
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    setStatus('Voice not supported in this browser. Use Chrome.', '');
+    enableTextMode();
+    return;
+  }
+  recognition = new SpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.lang = 'en-US';
+  recognition.onstart = function() {
+    isListening = true;
+    setMicState('listening');
+    setStatus('Listening...', 'listening');
+  };
+  recognition.onresult = function(e) {
+    var transcript = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      transcript += e.results[i][0].transcript;
+    }
+    pendingTranscript = transcript;
+    if (e.results[e.results.length-1].isFinal) {
+      isListening = false;
+      if (pendingTranscript.trim()) { processVoiceAnswer(pendingTranscript.trim()); }
+      else { setStatus('Tap mic to speak', ''); setMicState('idle'); }
+      pendingTranscript = '';
+    }
+  };
+  recognition.onerror = function(e) {
+    isListening = false;
+    setMicState('idle');
+    if (e.error === 'not-allowed') { setStatus('Mic blocked. Enable mic permission.', ''); enableTextMode(); }
+    else { setStatus('Tap mic to speak again', ''); }
+  };
+  recognition.onend = function() {
+    if (isListening) { isListening = false; setMicState('idle'); setStatus('Tap mic to speak', ''); }
+  };
+}
+
+// MIC CLICK
+function handleMicClick() {
+  if (isSpeaking) { skipSpeech(); return; }
+  if (isListening) { recognition && recognition.stop(); return; }
+  if (recognition) {
+    try { pendingTranscript = ''; recognition.start(); }
+    catch(e) { setStatus('Tap mic to try again', ''); }
+  }
+}
+
+function skipSpeech() {
+  if (currentUtterance) { window.speechSynthesis.cancel(); }
+  isSpeaking = false;
+  setMicState('idle');
+  setStatus('Tap mic to answer', '');
+}
+
+function toggleMute() {
+  isMuted = !isMuted;
+  var btn = document.getElementById('mute-btn');
+  btn.textContent = isMuted ? 'Unmute AI' : 'Mute AI';
+  btn.className = isMuted ? 'side-btn active' : 'side-btn';
+  if (isMuted && isSpeaking) { skipSpeech(); }
+}
+
+function toggleTextMode() {
+  isTextMode = !isTextMode;
+  var btn = document.getElementById('type-toggle-btn');
+  var inp = document.getElementById('text-input');
+  var snd = document.getElementById('send-txt-btn');
+  btn.textContent = isTextMode ? 'Use Voice' : 'Use Text';
+  btn.className = isTextMode ? 'side-btn active' : 'side-btn';
+  inp.style.display = isTextMode ? 'block' : 'none';
+  snd.style.display = isTextMode ? 'flex' : 'none';
+  if (isTextMode) { inp.focus(); }
+}
+
+function enableTextMode() {
+  isTextMode = true;
+  document.getElementById('type-toggle-btn').textContent = 'Use Voice';
+  document.getElementById('type-toggle-btn').className = 'side-btn active';
+  document.getElementById('text-input').style.display = 'block';
+  document.getElementById('send-txt-btn').style.display = 'flex';
+}
+
+// MIC STATE UI
+function setMicState(state) {
+  var btn = document.getElementById('mic-btn');
+  var ring = document.getElementById('mic-ring');
+  btn.className = 'mic-btn';
+  ring.className = 'ring';
+  if (state === 'listening') { btn.className = 'mic-btn listening'; ring.className = 'ring active-green'; }
+  else if (state === 'speaking') { btn.className = 'mic-btn speaking-ai'; ring.className = 'ring active-gold'; }
+}
+
+function setStatus(text, type) {
+  var el = document.getElementById('vstatus');
+  el.textContent = text;
+  el.className = 'voice-status' + (type ? ' ' + type : '');
+}
+
+// PROCESS VOICE ANSWER
+function processVoiceAnswer(text) {
+  setMicState('idle');
+  setStatus('Processing...', 'processing');
+  appendMessage('user', text);
+  questionCount++;
+  document.getElementById('q-count').textContent = questionCount;
+  conversationHistory.push({ role: 'user', content: text });
+  if (isDemoMode) { triggerDemoResponse(); }
+  else { callAI(text, false); }
+}
+
+// TEXT ANSWER
+function sendTextAnswer() {
+  var inp = document.getElementById('text-input');
+  var text = inp.value.trim();
+  if (!text) return;
+  inp.value = ''; inp.style.height = 'auto';
+  processVoiceAnswer(text);
+}
+
+function handleTextKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTextAnswer(); }
+}
+
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }
+
+// SPEAK AI RESPONSE
+function speakText(text) {
+  if (isMuted || !window.speechSynthesis) {
+    isSpeaking = false;
+    setMicState('idle');
+    setStatus('Tap mic to answer', '');
+    return;
+  }
+  window.speechSynthesis.cancel();
+  var clean = text.replace(/[*_#]/g, '');
+  currentUtterance = new SpeechSynthesisUtterance(clean);
+  currentUtterance.rate = 0.95;
+  currentUtterance.pitch = 1.05;
+  currentUtterance.volume = 1;
+
+  // pick a natural-sounding voice
+  var voices = window.speechSynthesis.getVoices();
+  var preferred = voices.filter(function(v){
+    return v.lang.startsWith('en') && (v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Moira') || v.name.includes('Google US') || v.name.includes('Microsoft'));
+  });
+  if (preferred.length > 0) { currentUtterance.voice = preferred[0]; }
+  else if (voices.length > 0) { currentUtterance.voice = voices[0]; }
+
+  isSpeaking = true;
+  setMicState('speaking');
+  setStatus('AI is speaking... (tap mic to skip)', 'speaking');
+
+  currentUtterance.onend = function() {
+    isSpeaking = false;
+    currentUtterance = null;
+    if (!isEnding) {
+      setMicState('idle');
+      setStatus('Tap mic to answer', '');
+    }
+  };
+  currentUtterance.onerror = function() {
+    isSpeaking = false;
+    currentUtterance = null;
+    setMicState('idle');
+    setStatus('Tap mic to answer', '');
+  };
+
+  window.speechSynthesis.speak(currentUtterance);
+}
+
+// CHAT UI
+function appendMessage(role, text) {
+  var area = document.getElementById('chat-area');
+  var div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = '<div class="msg-av">' + (role === 'ai' ? 'AI' : getInitials(candidateData.name)) + '</div><div class="msg-bubble">' + text.replace(/\n/g,'<br>') + '</div>';
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function showTyping() {
+  var area = document.getElementById('chat-area');
+  var div = document.createElement('div');
+  div.className = 'msg ai'; div.id = 'typing-ind';
+  div.innerHTML = '<div class="msg-av">AI</div><div class="typing-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  area.appendChild(div);
+  area.scrollTop = area.scrollHeight;
+}
+
+function removeTyping() { var t = document.getElementById('typing-ind'); if (t) t.remove(); }
+
+// DEMO
+function triggerDemoResponse() {
+  setStatus('AI is thinking...', 'processing');
+  setMicState('idle');
+  showTyping();
+  setTimeout(function() {
+    removeTyping();
+    var idx = Math.min(demoIndex, DEMO_QS.length - 1);
+    var reply = DEMO_QS[idx](candidateData.name, candidateData.role);
+    conversationHistory.push({ role: 'assistant', content: reply });
+    appendMessage('ai', reply);
+    demoIndex++;
+    var ended = reply.toLowerCase().indexOf('thank you') > -1 && reply.toLowerCase().indexOf('great conversation') > -1;
+    if (ended && !isEnding) { isEnding = true; setTimeout(function(){ endInterview(); }, 3500); }
+    speakText(reply);
+  }, 800 + Math.random() * 400);
+}
+
+// LIVE AI
+function getSystemPrompt() {
+  return 'You are a friendly, conversational HR interviewer for a ' + candidateData.role + ' position.\nCandidate: ' + candidateData.name + ' | Experience: ' + candidateData.exp + '\nTone: warm, professional, encouraging — like a senior HR colleague, not a robot.\nRules:\n- Ask ONE question at a time only\n- Probe and follow up on answers naturally before switching topic\n- Cover progressively: motivation/background, HR knowledge, process experience, situational judgment, AI/tech awareness\n- Adapt difficulty to the experience level\n- Keep responses concise — this is a voice conversation\n- Do NOT reveal scoring criteria\n- After 8-15 exchanges, close warmly: "That covers everything I needed — thank you ' + candidateData.name + ', this has been a great conversation!"\nBegin with a warm, brief greeting and your first question about their background.';
+}
+
+function callAI(userMessage, isFirst) {
+  setStatus('AI is thinking...', 'processing');
+  showTyping();
+  var msgs = isFirst ? [{ role: 'user', content: 'Begin.' }] : conversationHistory;
+  fetch(API_BASE + '/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': candidateData.apiKey, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 200, system: getSystemPrompt(), messages: msgs })
+  }).then(function(r){ return r.json(); }).then(function(data) {
+    var reply = (data.content && data.content[0]) ? data.content[0].text : 'Sorry, an error occurred.';
+    removeTyping();
+    conversationHistory.push({ role: 'assistant', content: reply });
+    if (!isFirst) { questionCount++; document.getElementById('q-count').textContent = questionCount; }
+    appendMessage('ai', reply);
+    var low = reply.toLowerCase();
+    var ended = low.indexOf('thank you') > -1 && (low.indexOf('covers everything') > -1 || low.indexOf('great conversation') > -1);
+    if (ended && !isEnding) { isEnding = true; setTimeout(function(){ endInterview(); }, 3500); }
+    speakText(reply);
+  }).catch(function() {
+    removeTyping();
+    var err = 'Sorry, connection issue. Please check your API key.';
+    appendMessage('ai', err);
+    speakText(err);
+  });
+}
+
+// END + SUMMARY
+function endInterview() {
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  recognition && recognition.stop();
+  document.getElementById('interview-screen').style.display = 'none';
+  document.getElementById('summary-screen').style.display = 'flex';
+  var elapsed = Math.max(1, Math.round((Date.now() - startTime) / 60000));
+  document.getElementById('sum-name').textContent = candidateData.name;
+  document.getElementById('sum-sub').textContent = candidateData.role + ' · ' + candidateData.exp + (isDemoMode ? ' (Demo)' : '');
+  document.getElementById('stat-q').textContent = questionCount;
+  document.getElementById('stat-min').textContent = elapsed;
+  if (isDemoMode) {
+    summaryData = DEMO_SUMMARY;
+    document.getElementById('final-score').textContent = summaryData.overall_score;
+    document.getElementById('stat-rec').textContent = '✓';
+  } else { generateSummary(elapsed); }
+}
+
+function generateSummary(elapsed) {
+  var transcript = conversationHistory.map(function(m){ return (m.role === 'assistant' ? 'Interviewer' : 'Candidate') + ': ' + m.content; }).join('\n\n');
+  fetch(API_BASE + '/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'x-api-key': candidateData.apiKey, 'anthropic-version': '2023-06-01' },
+    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: 'Evaluate this HR interview. Candidate: ' + candidateData.name + ', Role: ' + candidateData.role + ', Exp: ' + candidateData.exp + ', Duration: ' + elapsed + ' min, Questions: ' + questionCount + '.\n\nTRANSCRIPT:\n' + transcript + '\n\nRespond ONLY in valid JSON, no markdown:\n{"overall_score":72,"verdict":"Recommended","summary":"...","strengths":["..."],"concerns":["..."],"competency_scores":{"Communication":75,"HR Knowledge":70,"Problem Solving":65,"Cultural Fit":80,"Experience Relevance":70},"recommendation":"..."}' }] })
+  }).then(function(r){ return r.json(); }).then(function(data) {
+    var raw = (data.content && data.content[0]) ? data.content[0].text : '{}';
+    summaryData = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    document.getElementById('final-score').textContent = summaryData.overall_score;
+    document.getElementById('stat-rec').textContent = summaryData.verdict === 'Recommended' ? '✓' : '~';
+  }).catch(function() {
+    summaryData = { overall_score: '—', verdict: 'Manual Review', summary: 'Auto-summary failed.', strengths: [], concerns: [], competency_scores: {}, recommendation: 'Manual review required.' };
+    document.getElementById('final-score').textContent = '—';
+    document.getElementById('stat-rec').textContent = '?';
+  });
+}
+
+// EXCEL
+function downloadExcel() {
+  if (!summaryData) { alert('Summary still loading, please wait.'); return; }
+  var elapsed = document.getElementById('stat-min').textContent;
+  var wb = XLSX.utils.book_new();
+  var ws1 = XLSX.utils.aoa_to_sheet([
+    ['HR INTERVIEW REPORT (VOICE)',''],['',''],
+    ['Candidate', candidateData.name],['Role', candidateData.role],['Experience', candidateData.exp],
+    ['Date', new Date().toLocaleDateString()],['Duration (min)', elapsed],['Questions', questionCount],
+    ['Mode', isDemoMode ? 'Demo' : 'Live AI Voice'],['',''],
+    ['OVERALL SCORE', summaryData.overall_score + ' / 100'],['VERDICT', summaryData.verdict],['',''],
+    ['SUMMARY', summaryData.summary],['',''],['RECOMMENDATION', summaryData.recommendation]
+  ]);
+  ws1['!cols'] = [{wch:22},{wch:55}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
+
+  var compRows = [['Competency','Score','Rating']];
+  var cs = summaryData.competency_scores || {};
+  Object.keys(cs).forEach(function(k){ compRows.push([k, cs[k], cs[k]>=80?'Strong':cs[k]>=65?'Satisfactory':'Needs Development']); });
+  var ws2 = XLSX.utils.aoa_to_sheet(compRows);
+  ws2['!cols'] = [{wch:25},{wch:12},{wch:20}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Competency Scores');
+
+  var s = summaryData.strengths||[]; var c = summaryData.concerns||[];
+  var scRows = [['Strengths','Concerns']];
+  for (var i=0;i<Math.max(s.length,c.length);i++) scRows.push([s[i]||'',c[i]||'']);
+  var ws3 = XLSX.utils.aoa_to_sheet(scRows);
+  ws3['!cols'] = [{wch:45},{wch:45}];
+  XLSX.utils.book_append_sheet(wb, ws3, 'Strengths & Concerns');
+
+  var txRows = [['Role','Message']];
+  conversationHistory.forEach(function(m){ txRows.push([m.role==='assistant'?'Interviewer':'Candidate', m.content]); });
+  var ws4 = XLSX.utils.aoa_to_sheet(txRows);
+  ws4['!cols'] = [{wch:14},{wch:80}];
+  XLSX.utils.book_append_sheet(wb, ws4, 'Transcript');
+
+  XLSX.writeFile(wb, 'Interview_' + candidateData.name.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
+}
+
+function restart() {
+  summaryData = null; questionCount = 0; isEnding = false;
+  isDemoMode = false; demoIndex = 0; isMuted = false; isTextMode = false;
+  conversationHistory = []; isSpeaking = false; isListening = false;
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  document.getElementById('summary-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display = 'flex';
+  document.getElementById('text-input').style.display = 'none';
+  document.getElementById('send-txt-btn').style.display = 'none';
+  document.getElementById('type-toggle-btn').textContent = 'Use Text';
+  document.getElementById('type-toggle-btn').className = 'side-btn';
+  document.getElementById('mute-btn').textContent = 'Mute AI';
+  document.getElementById('mute-btn').className = 'side-btn';
+}
+
+// load voices early on some browsers
+if (window.speechSynthesis) {
+  window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
+}
+</script>
+</body>
+</html>
