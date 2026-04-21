@@ -10,9 +10,7 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0f0f0f;--surface:#181818;--surface2:#222;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f0ede8;--muted:#777;--accent:#c9a96e;--accent2:#e8d5b0;--danger:#e05555;--green:#4caf7d;--radius:14px}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.6;overflow:hidden}
-
-/* SETUP */
-#setup-screen{height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;animation:fadeIn .6s ease}
+#setup-screen{height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;animation:fadeIn .6s ease;overflow-y:auto}
 .setup-card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:2.5rem;max-width:460px;width:100%}
 .logo-wrap{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem}
 .logo-mark{width:44px;height:44px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -28,12 +26,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .api-row input{flex:1}
 .api-toggle{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:11px 13px;color:var(--muted);cursor:pointer;font-size:12px;white-space:nowrap;transition:all .2s;font-family:'DM Sans',sans-serif}
 .api-toggle:hover{border-color:var(--accent);color:var(--accent)}
+.section-label{font-size:11px;font-weight:500;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin:1.2rem 0 .6rem;border-top:1px solid var(--border);padding-top:1rem}
 .demo-note{background:#1e1a14;border:1px solid #3a2e1a;border-radius:9px;padding:9px 13px;margin-bottom:1rem;font-size:12px;color:var(--accent);line-height:1.5}
 .start-btn{width:100%;padding:13px;background:var(--accent);border:none;border-radius:10px;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
 .start-btn:hover{background:var(--accent2);transform:translateY(-1px)}
 .start-btn svg{width:16px;height:16px;fill:#1a1a1a}
-
-/* INTERVIEW SCREEN */
 #interview-screen{height:100vh;display:none;flex-direction:column}
 .iheader{padding:.9rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .cinfo{display:flex;align-items:center;gap:10px}
@@ -42,12 +39,11 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .crole{font-size:11px;color:var(--muted)}
 .hright{display:flex;align-items:center;gap:8px}
 .demo-badge{background:#3a2e1a;border:1px solid #5a4a2a;border-radius:20px;padding:3px 9px;font-size:11px;color:var(--accent);font-weight:500}
+.el-badge{background:#0f1e2e;border:1px solid #1a3a5a;border-radius:20px;padding:3px 9px;font-size:11px;color:#5bb3f0;font-weight:500}
 .qpill{background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:4px 11px;font-size:12px;color:var(--muted)}
 .qpill span{color:var(--accent);font-weight:500}
 .end-btn{background:transparent;border:1px solid var(--border2);border-radius:8px;padding:5px 12px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s}
 .end-btn:hover{border-color:var(--danger);color:var(--danger)}
-
-/* CHAT */
 .chat-area{flex:1;overflow-y:auto;padding:1.2rem 1.4rem;display:flex;flex-direction:column;gap:.8rem;scroll-behavior:smooth}
 .chat-area::-webkit-scrollbar{width:3px}
 .chat-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
@@ -63,17 +59,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .typing-bubble{background:var(--surface);border:1px solid var(--border);border-radius:13px;border-bottom-left-radius:3px;padding:12px 16px;display:flex;gap:4px;align-items:center}
 .dot{width:5px;height:5px;background:var(--muted);border-radius:50%;animation:bounce 1.2s infinite}
 .dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
-
-/* VOICE PANEL */
 .voice-panel{flex-shrink:0;border-top:1px solid var(--border);padding:1rem 1.4rem 1.4rem}
 .voice-status{text-align:center;font-size:12px;color:var(--muted);margin-bottom:.9rem;min-height:18px;transition:all .3s}
 .voice-status.speaking{color:var(--accent)}
 .voice-status.listening{color:var(--green)}
 .voice-status.processing{color:var(--muted)}
-
 .voice-controls{display:flex;align-items:center;justify-content:center;gap:16px}
-
-/* MIC BUTTON */
 .mic-btn{width:64px;height:64px;border-radius:50%;border:2px solid var(--border2);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative}
 .mic-btn svg{width:24px;height:24px;fill:var(--muted);transition:fill .2s}
 .mic-btn:hover{border-color:var(--accent)}
@@ -81,19 +72,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .mic-btn.listening svg{fill:var(--green)}
 .mic-btn.speaking-ai{border-color:var(--accent);background:rgba(201,169,110,0.08);animation:pulse-gold 1.5s infinite}
 .mic-btn.speaking-ai svg{fill:var(--accent)}
-.mic-btn:disabled{opacity:.3;cursor:not-allowed;animation:none}
-
-/* WAVEFORM RING */
 .ring{position:absolute;width:64px;height:64px;border-radius:50%;border:2px solid transparent;top:-2px;left:-2px;pointer-events:none}
 .ring.active-green{border-color:var(--green);animation:ring-expand 1s ease-out infinite}
 .ring.active-gold{border-color:var(--accent);animation:ring-expand 1s ease-out infinite}
-
 .side-btns{display:flex;flex-direction:column;gap:8px}
 .side-btn{background:var(--surface2);border:1px solid var(--border2);border-radius:9px;padding:7px 14px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:all .2s;white-space:nowrap}
-.side-btn:hover{border-color:var(--border2);color:var(--text)}
+.side-btn:hover{color:var(--text)}
 .side-btn.active{border-color:var(--accent);color:var(--accent)}
-
-/* transcript toggle */
 .transcript-row{display:flex;gap:8px;align-items:flex-end;margin-top:.8rem}
 #text-input{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:9px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:300;outline:none;resize:none;max-height:100px;line-height:1.5;transition:border-color .2s;display:none}
 #text-input:focus{border-color:var(--accent)}
@@ -101,8 +86,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .send-txt-btn{background:var(--accent);border:none;border-radius:9px;width:36px;height:36px;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
 .send-txt-btn:hover{background:var(--accent2)}
 .send-txt-btn svg{width:15px;height:15px;fill:#1a1a1a}
-
-/* SUMMARY */
 #summary-screen{height:100vh;display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem;animation:fadeIn .6s ease}
 .sum-card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:2.5rem;max-width:500px;width:100%;text-align:center}
 .score-ring{width:84px;height:84px;border-radius:50%;border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 1.4rem;flex-direction:column}
@@ -118,10 +101,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .dl-btn:hover{background:var(--accent2)}
 .rs-btn{width:100%;padding:11px;background:transparent;border:1px solid var(--border2);border-radius:10px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
 .rs-btn:hover{color:var(--text)}
-
 .float-cloud{position:fixed;bottom:20px;right:20px;width:40px;height:40px;background:var(--surface2);border:1px solid var(--border2);border-radius:50%;display:flex;align-items:center;justify-content:center;animation:float 3s ease-in-out infinite;z-index:999}
 .float-cloud svg{width:18px;height:18px;fill:var(--muted)}
-
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes msgIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
@@ -133,13 +114,13 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 </head>
 <body>
 
-<!-- SETUP -->
 <div id="setup-screen">
   <div class="setup-card">
     <div class="logo-wrap">
       <div class="logo-mark"><svg viewBox="0 0 24 24"><path d="M12 1a11 11 0 100 22A11 11 0 0012 1zm-1.5 15.5v-9l7 4.5-7 4.5z"/></svg></div>
       <div><div class="logo-title">HR Interview AI</div><div class="logo-sub">Voice-powered candidate screening</div></div>
     </div>
+
     <div class="field"><label>Candidate Name</label><input type="text" id="candidate-name" placeholder="e.g. Aung Kyaw Zin" /></div>
     <div class="field">
       <label>Role Applied For</label>
@@ -159,14 +140,30 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
         <option value="8+ years">8+ years (Lead/Manager)</option>
       </select>
     </div>
+
+    <div class="section-label">AI Brain (Claude)</div>
     <div class="field">
-      <label>API Key — leave blank for Demo Mode</label>
+      <label>Claude API Key (awstore/kiro.cheap)</label>
       <div class="api-row">
-        <input type="password" id="api-key" placeholder="sk-... (optional)" />
+        <input type="password" id="api-key" placeholder="sk-... (leave blank for Demo)" />
         <button class="api-toggle" id="api-toggle-btn" onclick="toggleApiVis()">Show</button>
       </div>
     </div>
-    <div class="demo-note">Leave blank for Demo Mode — scripted voice interview + sample Excel export. Add kiro.cheap key for live AI.</div>
+
+    <div class="section-label">Voice (ElevenLabs)</div>
+    <div class="field">
+      <label>ElevenLabs API Key</label>
+      <div class="api-row">
+        <input type="password" id="el-key" placeholder="sk_... (leave blank for browser voice)" />
+        <button class="api-toggle" id="el-toggle-btn" onclick="toggleElVis()">Show</button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Voice ID — leave blank for Rachel (default)</label>
+      <input type="text" id="el-voice" placeholder="21m00Tcm4TlvDq8ikWAM" />
+    </div>
+
+    <div class="demo-note">All fields optional — blank = Demo Mode. Claude key = AI brain. ElevenLabs key = natural human voice.</div>
     <button class="start-btn" onclick="startInterview()">
       <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 3.39-3.4 6-6.91 6s-6.42-2.61-6.91-6H2.1C2.58 14.93 6 18 10 18.93V21h4v-2.07C17.98 18 21.42 14.93 21.9 11H17.9z"/></svg>
       Start Voice Interview
@@ -174,7 +171,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   </div>
 </div>
 
-<!-- INTERVIEW -->
 <div id="interview-screen">
   <div class="iheader">
     <div class="cinfo">
@@ -183,32 +179,28 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
     </div>
     <div class="hright">
       <div class="demo-badge" id="demo-badge" style="display:none">DEMO</div>
+      <div class="el-badge" id="el-badge" style="display:none">ElevenLabs</div>
       <div class="qpill">Q <span id="q-count">0</span></div>
       <button class="end-btn" onclick="endInterview()">End &amp; Export</button>
     </div>
   </div>
-
   <div class="chat-area" id="chat-area"></div>
-
   <div class="voice-panel">
     <div class="voice-status" id="vstatus">Press the mic to start</div>
     <div class="voice-controls">
       <div class="side-btns">
         <button class="side-btn" id="type-toggle-btn" onclick="toggleTextMode()">Use Text</button>
-        <button class="side-btn" id="skip-btn" onclick="skipSpeech()">Skip TTS</button>
+        <button class="side-btn" onclick="skipSpeech()">Skip TTS</button>
       </div>
-
       <button class="mic-btn" id="mic-btn" onclick="handleMicClick()">
         <div class="ring" id="mic-ring"></div>
         <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 3.39-3.4 6-6.91 6s-6.42-2.61-6.91-6H2.1C2.58 14.93 6 18 10 18.93V21h4v-2.07C17.98 18 21.42 14.93 21.9 11H17.9z"/></svg>
       </button>
-
       <div class="side-btns">
         <button class="side-btn" id="mute-btn" onclick="toggleMute()">Mute AI</button>
         <button class="side-btn" onclick="endInterview()">Finish</button>
       </div>
     </div>
-
     <div class="transcript-row">
       <textarea id="text-input" rows="1" placeholder="Type your answer..." onkeydown="handleTextKey(event)" oninput="autoResize(this)"></textarea>
       <button class="send-txt-btn" id="send-txt-btn" onclick="sendTextAnswer()">
@@ -218,16 +210,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   </div>
 </div>
 
-<!-- SUMMARY -->
 <div id="summary-screen">
   <div class="sum-card">
-    <div class="score-ring"><span class="snum" id="final-score">—</span><span class="slbl">/ 100</span></div>
+    <div class="score-ring"><span class="snum" id="final-score">--</span><span class="slbl">/ 100</span></div>
     <h2 id="sum-name">Interview Complete</h2>
     <p class="sub" id="sum-sub">Processing...</p>
     <div class="stats-grid">
       <div class="sbox"><span class="sv" id="stat-q">0</span><span class="sk">Questions</span></div>
       <div class="sbox"><span class="sv" id="stat-min">0</span><span class="sk">Minutes</span></div>
-      <div class="sbox"><span class="sv" id="stat-rec">—</span><span class="sk">Verdict</span></div>
+      <div class="sbox"><span class="sv" id="stat-rec">--</span><span class="sk">Verdict</span></div>
     </div>
     <button class="dl-btn" onclick="downloadExcel()">Download Excel Report</button>
     <button class="rs-btn" onclick="restart()">New Interview</button>
@@ -239,7 +230,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 </div>
 
 <script>
-// STATE
 var conversationHistory = [];
 var candidateData = {};
 var questionCount = 0;
@@ -253,12 +243,15 @@ var isTextMode = false;
 var isListening = false;
 var isSpeaking = false;
 var recognition = null;
-var currentUtterance = null;
 var pendingTranscript = '';
+var elKey = '';
+var elVoiceId = '21m00Tcm4TlvDq8ikWAM'; // Rachel default
+var useElevenLabs = false;
+var currentAudio = null;
 
 var API_BASE = 'https://api.kiro.cheap/v1';
+var EL_API = 'https://api.elevenlabs.io/v1';
 
-// DEMO QUESTIONS
 var DEMO_QS = [
   function(n,r){ return 'Hey ' + n + ', great to meet you! Thanks for making time today. So tell me — what got you interested in the ' + r + ' role, and give me a quick overview of your background?'; },
   function(){ return "That's helpful context! Walk me through a typical HR process you own day-to-day — how do you make sure it stays consistent?"; },
@@ -279,10 +272,16 @@ var DEMO_SUMMARY = {
   recommendation: 'Recommended for second round with hiring manager. Verify multi-country experience at next stage.'
 };
 
-// SETUP UTILS
 function toggleApiVis() {
   var inp = document.getElementById('api-key');
   var btn = document.getElementById('api-toggle-btn');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
+}
+
+function toggleElVis() {
+  var inp = document.getElementById('el-key');
+  var btn = document.getElementById('el-toggle-btn');
   inp.type = inp.type === 'password' ? 'text' : 'password';
   btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
 }
@@ -291,12 +290,16 @@ function getInitials(name) {
   return name.trim().split(/\s+/).map(function(n){ return n[0]; }).join('').toUpperCase().slice(0,2);
 }
 
-// START
 function startInterview() {
   var name = document.getElementById('candidate-name').value.trim();
   var role = document.getElementById('role-select').value;
   var exp = document.getElementById('exp-select').value;
   var apiKey = document.getElementById('api-key').value.trim();
+  elKey = document.getElementById('el-key').value.trim();
+  var voiceInput = document.getElementById('el-voice').value.trim();
+  if (voiceInput) elVoiceId = voiceInput;
+  useElevenLabs = !!elKey;
+
   if (!name) { alert('Please enter candidate name.'); return; }
 
   isDemoMode = !apiKey;
@@ -316,6 +319,7 @@ function startInterview() {
   document.getElementById('q-count').textContent = 0;
   document.getElementById('chat-area').innerHTML = '';
   document.getElementById('demo-badge').style.display = isDemoMode ? 'block' : 'none';
+  document.getElementById('el-badge').style.display = useElevenLabs ? 'block' : 'none';
   document.getElementById('setup-screen').style.display = 'none';
   document.getElementById('interview-screen').style.display = 'flex';
 
@@ -326,29 +330,18 @@ function startInterview() {
   else { callAI(null, true); }
 }
 
-// SPEECH RECOGNITION INIT
 function initSpeechRecognition() {
-  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    setStatus('Voice not supported in this browser. Use Chrome.', '');
-    enableTextMode();
-    return;
-  }
-  recognition = new SpeechRecognition();
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { setStatus('Voice not supported. Use Chrome or enable text mode.', ''); enableTextMode(); return; }
+  recognition = new SR();
   recognition.continuous = false;
   recognition.interimResults = true;
   recognition.lang = 'en-US';
-  recognition.onstart = function() {
-    isListening = true;
-    setMicState('listening');
-    setStatus('Listening...', 'listening');
-  };
+  recognition.onstart = function() { isListening = true; setMicState('listening'); setStatus('Listening...', 'listening'); };
   recognition.onresult = function(e) {
-    var transcript = '';
-    for (var i = e.resultIndex; i < e.results.length; i++) {
-      transcript += e.results[i][0].transcript;
-    }
-    pendingTranscript = transcript;
+    var t = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
+    pendingTranscript = t;
     if (e.results[e.results.length-1].isFinal) {
       isListening = false;
       if (pendingTranscript.trim()) { processVoiceAnswer(pendingTranscript.trim()); }
@@ -357,28 +350,22 @@ function initSpeechRecognition() {
     }
   };
   recognition.onerror = function(e) {
-    isListening = false;
-    setMicState('idle');
-    if (e.error === 'not-allowed') { setStatus('Mic blocked. Enable mic permission.', ''); enableTextMode(); }
+    isListening = false; setMicState('idle');
+    if (e.error === 'not-allowed') { setStatus('Mic blocked — enable permission or use text mode.', ''); enableTextMode(); }
     else { setStatus('Tap mic to speak again', ''); }
   };
-  recognition.onend = function() {
-    if (isListening) { isListening = false; setMicState('idle'); setStatus('Tap mic to speak', ''); }
-  };
+  recognition.onend = function() { if (isListening) { isListening = false; setMicState('idle'); setStatus('Tap mic to speak', ''); } };
 }
 
-// MIC CLICK
 function handleMicClick() {
   if (isSpeaking) { skipSpeech(); return; }
   if (isListening) { recognition && recognition.stop(); return; }
-  if (recognition) {
-    try { pendingTranscript = ''; recognition.start(); }
-    catch(e) { setStatus('Tap mic to try again', ''); }
-  }
+  if (recognition) { try { pendingTranscript = ''; recognition.start(); } catch(e) { setStatus('Tap mic to try again', ''); } }
 }
 
 function skipSpeech() {
-  if (currentUtterance) { window.speechSynthesis.cancel(); }
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  window.speechSynthesis && window.speechSynthesis.cancel();
   isSpeaking = false;
   setMicState('idle');
   setStatus('Tap mic to answer', '');
@@ -389,19 +376,16 @@ function toggleMute() {
   var btn = document.getElementById('mute-btn');
   btn.textContent = isMuted ? 'Unmute AI' : 'Mute AI';
   btn.className = isMuted ? 'side-btn active' : 'side-btn';
-  if (isMuted && isSpeaking) { skipSpeech(); }
+  if (isMuted && isSpeaking) skipSpeech();
 }
 
 function toggleTextMode() {
   isTextMode = !isTextMode;
-  var btn = document.getElementById('type-toggle-btn');
-  var inp = document.getElementById('text-input');
-  var snd = document.getElementById('send-txt-btn');
-  btn.textContent = isTextMode ? 'Use Voice' : 'Use Text';
-  btn.className = isTextMode ? 'side-btn active' : 'side-btn';
-  inp.style.display = isTextMode ? 'block' : 'none';
-  snd.style.display = isTextMode ? 'flex' : 'none';
-  if (isTextMode) { inp.focus(); }
+  document.getElementById('type-toggle-btn').textContent = isTextMode ? 'Use Voice' : 'Use Text';
+  document.getElementById('type-toggle-btn').className = isTextMode ? 'side-btn active' : 'side-btn';
+  document.getElementById('text-input').style.display = isTextMode ? 'block' : 'none';
+  document.getElementById('send-txt-btn').style.display = isTextMode ? 'flex' : 'none';
+  if (isTextMode) document.getElementById('text-input').focus();
 }
 
 function enableTextMode() {
@@ -412,7 +396,6 @@ function enableTextMode() {
   document.getElementById('send-txt-btn').style.display = 'flex';
 }
 
-// MIC STATE UI
 function setMicState(state) {
   var btn = document.getElementById('mic-btn');
   var ring = document.getElementById('mic-ring');
@@ -428,7 +411,6 @@ function setStatus(text, type) {
   el.className = 'voice-status' + (type ? ' ' + type : '');
 }
 
-// PROCESS VOICE ANSWER
 function processVoiceAnswer(text) {
   setMicState('idle');
   setStatus('Processing...', 'processing');
@@ -440,7 +422,6 @@ function processVoiceAnswer(text) {
   else { callAI(text, false); }
 }
 
-// TEXT ANSWER
 function sendTextAnswer() {
   var inp = document.getElementById('text-input');
   var text = inp.value.trim();
@@ -449,58 +430,69 @@ function sendTextAnswer() {
   processVoiceAnswer(text);
 }
 
-function handleTextKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTextAnswer(); }
-}
-
+function handleTextKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTextAnswer(); } }
 function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }
 
-// SPEAK AI RESPONSE
-function speakText(text) {
-  if (isMuted || !window.speechSynthesis) {
-    isSpeaking = false;
-    setMicState('idle');
-    setStatus('Tap mic to answer', '');
-    return;
-  }
-  window.speechSynthesis.cancel();
+// ELEVENLABS TTS
+function speakWithElevenLabs(text, onDone) {
   var clean = text.replace(/[*_#]/g, '');
-  currentUtterance = new SpeechSynthesisUtterance(clean);
-  currentUtterance.rate = 0.95;
-  currentUtterance.pitch = 1.05;
-  currentUtterance.volume = 1;
-
-  // pick a natural-sounding voice
-  var voices = window.speechSynthesis.getVoices();
-  var preferred = voices.filter(function(v){
-    return v.lang.startsWith('en') && (v.name.includes('Female') || v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Moira') || v.name.includes('Google US') || v.name.includes('Microsoft'));
-  });
-  if (preferred.length > 0) { currentUtterance.voice = preferred[0]; }
-  else if (voices.length > 0) { currentUtterance.voice = voices[0]; }
-
   isSpeaking = true;
   setMicState('speaking');
   setStatus('AI is speaking... (tap mic to skip)', 'speaking');
 
-  currentUtterance.onend = function() {
-    isSpeaking = false;
-    currentUtterance = null;
-    if (!isEnding) {
-      setMicState('idle');
-      setStatus('Tap mic to answer', '');
-    }
-  };
-  currentUtterance.onerror = function() {
-    isSpeaking = false;
-    currentUtterance = null;
-    setMicState('idle');
-    setStatus('Tap mic to answer', '');
-  };
-
-  window.speechSynthesis.speak(currentUtterance);
+  fetch(EL_API + '/text-to-speech/' + elVoiceId + '/stream', {
+    method: 'POST',
+    headers: { 'xi-api-key': elKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+    body: JSON.stringify({ text: clean, model_id: 'eleven_turbo_v2', voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.3, use_speaker_boost: true } })
+  }).then(function(r) {
+    if (!r.ok) throw new Error('EL error ' + r.status);
+    return r.blob();
+  }).then(function(blob) {
+    var url = URL.createObjectURL(blob);
+    currentAudio = new Audio(url);
+    currentAudio.onended = function() {
+      isSpeaking = false; currentAudio = null;
+      URL.revokeObjectURL(url);
+      if (!isEnding) { setMicState('idle'); setStatus('Tap mic to answer', ''); }
+      if (onDone) onDone();
+    };
+    currentAudio.onerror = function() {
+      isSpeaking = false; currentAudio = null;
+      setMicState('idle'); setStatus('Tap mic to answer', '');
+      if (onDone) onDone();
+    };
+    currentAudio.play();
+  }).catch(function(err) {
+    console.warn('ElevenLabs failed, falling back to browser TTS:', err);
+    speakWithBrowser(text, onDone);
+  });
 }
 
-// CHAT UI
+// BROWSER TTS FALLBACK
+function speakWithBrowser(text, onDone) {
+  if (!window.speechSynthesis) { isSpeaking = false; setMicState('idle'); setStatus('Tap mic to answer', ''); if (onDone) onDone(); return; }
+  window.speechSynthesis.cancel();
+  var clean = text.replace(/[*_#]/g, '');
+  var utt = new SpeechSynthesisUtterance(clean);
+  utt.rate = 0.95; utt.pitch = 1.05; utt.volume = 1;
+  var voices = window.speechSynthesis.getVoices();
+  var pref = voices.filter(function(v){ return v.lang.startsWith('en') && (v.name.includes('Samantha') || v.name.includes('Karen') || v.name.includes('Google US') || v.name.includes('Microsoft')); });
+  if (pref.length) utt.voice = pref[0];
+  else if (voices.length) utt.voice = voices[0];
+  isSpeaking = true;
+  setMicState('speaking');
+  setStatus('AI is speaking... (tap mic to skip)', 'speaking');
+  utt.onend = function() { isSpeaking = false; if (!isEnding) { setMicState('idle'); setStatus('Tap mic to answer', ''); } if (onDone) onDone(); };
+  utt.onerror = function() { isSpeaking = false; setMicState('idle'); setStatus('Tap mic to answer', ''); if (onDone) onDone(); };
+  window.speechSynthesis.speak(utt);
+}
+
+function speakText(text, onDone) {
+  if (isMuted) { isSpeaking = false; setMicState('idle'); setStatus('Tap mic to answer', ''); if (onDone) onDone(); return; }
+  if (useElevenLabs) { speakWithElevenLabs(text, onDone); }
+  else { speakWithBrowser(text, onDone); }
+}
+
 function appendMessage(role, text) {
   var area = document.getElementById('chat-area');
   var div = document.createElement('div');
@@ -515,13 +507,11 @@ function showTyping() {
   var div = document.createElement('div');
   div.className = 'msg ai'; div.id = 'typing-ind';
   div.innerHTML = '<div class="msg-av">AI</div><div class="typing-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
-  area.appendChild(div);
-  area.scrollTop = area.scrollHeight;
+  area.appendChild(div); area.scrollTop = area.scrollHeight;
 }
 
 function removeTyping() { var t = document.getElementById('typing-ind'); if (t) t.remove(); }
 
-// DEMO
 function triggerDemoResponse() {
   setStatus('AI is thinking...', 'processing');
   setMicState('idle');
@@ -534,14 +524,13 @@ function triggerDemoResponse() {
     appendMessage('ai', reply);
     demoIndex++;
     var ended = reply.toLowerCase().indexOf('thank you') > -1 && reply.toLowerCase().indexOf('great conversation') > -1;
-    if (ended && !isEnding) { isEnding = true; setTimeout(function(){ endInterview(); }, 3500); }
+    if (ended && !isEnding) { isEnding = true; speakText(reply, function(){ setTimeout(endInterview, 1500); }); return; }
     speakText(reply);
   }, 800 + Math.random() * 400);
 }
 
-// LIVE AI
 function getSystemPrompt() {
-  return 'You are a friendly, conversational HR interviewer for a ' + candidateData.role + ' position.\nCandidate: ' + candidateData.name + ' | Experience: ' + candidateData.exp + '\nTone: warm, professional, encouraging — like a senior HR colleague, not a robot.\nRules:\n- Ask ONE question at a time only\n- Probe and follow up on answers naturally before switching topic\n- Cover progressively: motivation/background, HR knowledge, process experience, situational judgment, AI/tech awareness\n- Adapt difficulty to the experience level\n- Keep responses concise — this is a voice conversation\n- Do NOT reveal scoring criteria\n- After 8-15 exchanges, close warmly: "That covers everything I needed — thank you ' + candidateData.name + ', this has been a great conversation!"\nBegin with a warm, brief greeting and your first question about their background.';
+  return 'You are a friendly, conversational HR interviewer for a ' + candidateData.role + ' position.\nCandidate: ' + candidateData.name + ' | Experience: ' + candidateData.exp + '\nTone: warm, professional, encouraging — like a senior HR colleague.\nRules:\n- ONE question at a time only\n- Probe follow-ups naturally before switching topic\n- Cover: motivation/background, HR knowledge, process experience, situational judgment, AI awareness\n- Adapt difficulty to experience level\n- Keep responses concise — this is a voice conversation, max 2-3 sentences per turn\n- Do NOT reveal scoring\n- After 8-15 exchanges close warmly: "That covers everything I needed — thank you ' + candidateData.name + ', this has been a great conversation!"\nBegin with a warm brief greeting and first question about their background.';
 }
 
 function callAI(userMessage, isFirst) {
@@ -560,18 +549,18 @@ function callAI(userMessage, isFirst) {
     appendMessage('ai', reply);
     var low = reply.toLowerCase();
     var ended = low.indexOf('thank you') > -1 && (low.indexOf('covers everything') > -1 || low.indexOf('great conversation') > -1);
-    if (ended && !isEnding) { isEnding = true; setTimeout(function(){ endInterview(); }, 3500); }
+    if (ended && !isEnding) { isEnding = true; speakText(reply, function(){ setTimeout(endInterview, 1500); }); return; }
     speakText(reply);
   }).catch(function() {
     removeTyping();
-    var err = 'Sorry, connection issue. Please check your API key.';
+    var err = 'Connection issue — check your API key or try text mode.';
     appendMessage('ai', err);
     speakText(err);
   });
 }
 
-// END + SUMMARY
 function endInterview() {
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
   window.speechSynthesis && window.speechSynthesis.cancel();
   recognition && recognition.stop();
   document.getElementById('interview-screen').style.display = 'none';
@@ -584,7 +573,7 @@ function endInterview() {
   if (isDemoMode) {
     summaryData = DEMO_SUMMARY;
     document.getElementById('final-score').textContent = summaryData.overall_score;
-    document.getElementById('stat-rec').textContent = '✓';
+    document.getElementById('stat-rec').textContent = 'Yes';
   } else { generateSummary(elapsed); }
 }
 
@@ -598,50 +587,45 @@ function generateSummary(elapsed) {
     var raw = (data.content && data.content[0]) ? data.content[0].text : '{}';
     summaryData = JSON.parse(raw.replace(/```json|```/g,'').trim());
     document.getElementById('final-score').textContent = summaryData.overall_score;
-    document.getElementById('stat-rec').textContent = summaryData.verdict === 'Recommended' ? '✓' : '~';
+    document.getElementById('stat-rec').textContent = summaryData.verdict === 'Recommended' ? 'Yes' : 'Review';
   }).catch(function() {
-    summaryData = { overall_score: '—', verdict: 'Manual Review', summary: 'Auto-summary failed.', strengths: [], concerns: [], competency_scores: {}, recommendation: 'Manual review required.' };
-    document.getElementById('final-score').textContent = '—';
+    summaryData = { overall_score: '--', verdict: 'Manual Review', summary: 'Auto-summary failed. Review transcript.', strengths: [], concerns: [], competency_scores: {}, recommendation: 'Manual review required.' };
+    document.getElementById('final-score').textContent = '--';
     document.getElementById('stat-rec').textContent = '?';
   });
 }
 
-// EXCEL
 function downloadExcel() {
   if (!summaryData) { alert('Summary still loading, please wait.'); return; }
   var elapsed = document.getElementById('stat-min').textContent;
   var wb = XLSX.utils.book_new();
   var ws1 = XLSX.utils.aoa_to_sheet([
-    ['HR INTERVIEW REPORT (VOICE)',''],['',''],
+    ['HR INTERVIEW REPORT',''],['',''],
     ['Candidate', candidateData.name],['Role', candidateData.role],['Experience', candidateData.exp],
     ['Date', new Date().toLocaleDateString()],['Duration (min)', elapsed],['Questions', questionCount],
-    ['Mode', isDemoMode ? 'Demo' : 'Live AI Voice'],['',''],
+    ['Voice', useElevenLabs ? 'ElevenLabs' : 'Browser TTS'],['Mode', isDemoMode ? 'Demo' : 'Live AI'],['',''],
     ['OVERALL SCORE', summaryData.overall_score + ' / 100'],['VERDICT', summaryData.verdict],['',''],
     ['SUMMARY', summaryData.summary],['',''],['RECOMMENDATION', summaryData.recommendation]
   ]);
   ws1['!cols'] = [{wch:22},{wch:55}];
   XLSX.utils.book_append_sheet(wb, ws1, 'Summary');
-
   var compRows = [['Competency','Score','Rating']];
   var cs = summaryData.competency_scores || {};
   Object.keys(cs).forEach(function(k){ compRows.push([k, cs[k], cs[k]>=80?'Strong':cs[k]>=65?'Satisfactory':'Needs Development']); });
   var ws2 = XLSX.utils.aoa_to_sheet(compRows);
   ws2['!cols'] = [{wch:25},{wch:12},{wch:20}];
   XLSX.utils.book_append_sheet(wb, ws2, 'Competency Scores');
-
   var s = summaryData.strengths||[]; var c = summaryData.concerns||[];
   var scRows = [['Strengths','Concerns']];
   for (var i=0;i<Math.max(s.length,c.length);i++) scRows.push([s[i]||'',c[i]||'']);
   var ws3 = XLSX.utils.aoa_to_sheet(scRows);
   ws3['!cols'] = [{wch:45},{wch:45}];
   XLSX.utils.book_append_sheet(wb, ws3, 'Strengths & Concerns');
-
   var txRows = [['Role','Message']];
   conversationHistory.forEach(function(m){ txRows.push([m.role==='assistant'?'Interviewer':'Candidate', m.content]); });
   var ws4 = XLSX.utils.aoa_to_sheet(txRows);
   ws4['!cols'] = [{wch:14},{wch:80}];
   XLSX.utils.book_append_sheet(wb, ws4, 'Transcript');
-
   XLSX.writeFile(wb, 'Interview_' + candidateData.name.replace(/\s+/g,'_') + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
 }
 
@@ -649,6 +633,7 @@ function restart() {
   summaryData = null; questionCount = 0; isEnding = false;
   isDemoMode = false; demoIndex = 0; isMuted = false; isTextMode = false;
   conversationHistory = []; isSpeaking = false; isListening = false;
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
   window.speechSynthesis && window.speechSynthesis.cancel();
   document.getElementById('summary-screen').style.display = 'none';
   document.getElementById('setup-screen').style.display = 'flex';
@@ -660,7 +645,6 @@ function restart() {
   document.getElementById('mute-btn').className = 'side-btn';
 }
 
-// load voices early on some browsers
 if (window.speechSynthesis) {
   window.speechSynthesis.onvoiceschanged = function() { window.speechSynthesis.getVoices(); };
 }
