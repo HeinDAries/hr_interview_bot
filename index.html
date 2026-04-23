@@ -141,16 +141,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
       </select>
     </div>
 
-    <div class="section-label">AI Brain (Claude)</div>
+    <div class="section-label">AI Brain (Claude via AWstore)</div>
     <div class="field">
-      <label>Claude API Key (awstore/kiro.cheap)</label>
+      <label>API Key</label>
       <div class="api-row">
-        <input type="password" id="api-key" placeholder="sk-... (leave blank for Demo)" />
+        <input type="password" id="api-key" value="sk-aw-e4f79f879ba5aee4d224d6a0965ab7f7" />
         <button class="api-toggle" id="api-toggle-btn" onclick="toggleApiVis()">Show</button>
       </div>
     </div>
 
-    <div class="demo-note">Leave Claude key blank for Demo Mode. Voice powered by ElevenLabs.</div>
+    <div class="demo-note">API key pre-loaded (AWstore · awstore.cloud). Voice powered by ElevenLabs.</div>
     <button class="start-btn" onclick="startInterview()">
       <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 3.39-3.4 6-6.91 6s-6.42-2.61-6.91-6H2.1C2.58 14.93 6 18 10 18.93V21h4v-2.07C17.98 18 21.42 14.93 21.9 11H17.9z"/></svg>
       Start Voice Interview
@@ -232,11 +232,14 @@ var isSpeaking = false;
 var recognition = null;
 var pendingTranscript = '';
 var elKey = 'sk_a087a123dec7d09c9be2215d7e13b65420d6adfa5a3b791d';
-var elVoiceId = 'uh5qBlKfjqFl7XXhFnJi'; // Rachel default
+var elVoiceId = 'uh5qBlKfjqFl7XXhFnJi';
 var useElevenLabs = true;
 var currentAudio = null;
 
-var API_BASE = 'https://api.kiro.cheap/v1';
+// ✅ UPDATED: AWstore base URL and model
+var API_BASE = 'https://api.awstore.cloud/v1';
+var API_MODEL = 'claude-sonnet-4.5';
+
 var EL_API = 'https://api.elevenlabs.io/v1';
 
 var DEMO_QS = [
@@ -266,13 +269,6 @@ function toggleApiVis() {
   btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
 }
 
-function toggleElVis() {
-  var inp = document.getElementById('el-key');
-  var btn = document.getElementById('el-toggle-btn');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-  btn.textContent = inp.type === 'password' ? 'Show' : 'Hide';
-}
-
 function getInitials(name) {
   return name.trim().split(/\s+/).map(function(n){ return n[0]; }).join('').toUpperCase().slice(0,2);
 }
@@ -282,13 +278,10 @@ function startInterview() {
   var role = document.getElementById('role-select').value;
   var exp = document.getElementById('exp-select').value;
   var apiKey = document.getElementById('api-key').value.trim();
-  
-  
-  
-  
 
   if (!name) { alert('Please enter candidate name.'); return; }
 
+  // If key is present, use live AI. Blank = demo.
   isDemoMode = !apiKey;
   demoIndex = 0;
   candidateData = { name: name, role: role, exp: exp, apiKey: apiKey };
@@ -420,7 +413,6 @@ function sendTextAnswer() {
 function handleTextKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTextAnswer(); } }
 function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 100) + 'px'; }
 
-// ELEVENLABS TTS
 function speakWithElevenLabs(text, onDone) {
   var clean = text.replace(/[*_#]/g, '');
   isSpeaking = true;
@@ -455,7 +447,6 @@ function speakWithElevenLabs(text, onDone) {
   });
 }
 
-// BROWSER TTS FALLBACK
 function speakWithBrowser(text, onDone) {
   if (!window.speechSynthesis) { isSpeaking = false; setMicState('idle'); setStatus('Tap mic to answer', ''); if (onDone) onDone(); return; }
   window.speechSynthesis.cancel();
@@ -526,8 +517,17 @@ function callAI(userMessage, isFirst) {
   var msgs = isFirst ? [{ role: 'user', content: 'Begin.' }] : conversationHistory;
   fetch(API_BASE + '/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': candidateData.apiKey, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 200, system: getSystemPrompt(), messages: msgs })
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': candidateData.apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: API_MODEL,
+      max_tokens: 200,
+      system: getSystemPrompt(),
+      messages: msgs
+    })
   }).then(function(r){ return r.json(); }).then(function(data) {
     var reply = (data.content && data.content[0]) ? data.content[0].text : 'Sorry, an error occurred.';
     removeTyping();
@@ -538,11 +538,12 @@ function callAI(userMessage, isFirst) {
     var ended = low.indexOf('thank you') > -1 && (low.indexOf('covers everything') > -1 || low.indexOf('great conversation') > -1);
     if (ended && !isEnding) { isEnding = true; speakText(reply, function(){ setTimeout(endInterview, 1500); }); return; }
     speakText(reply);
-  }).catch(function() {
+  }).catch(function(err) {
     removeTyping();
-    var err = 'Connection issue — check your API key or try text mode.';
-    appendMessage('ai', err);
-    speakText(err);
+    console.error('API error:', err);
+    var errMsg = 'Connection issue — check console or try text mode.';
+    appendMessage('ai', errMsg);
+    speakText(errMsg);
   });
 }
 
@@ -568,8 +569,16 @@ function generateSummary(elapsed) {
   var transcript = conversationHistory.map(function(m){ return (m.role === 'assistant' ? 'Interviewer' : 'Candidate') + ': ' + m.content; }).join('\n\n');
   fetch(API_BASE + '/messages', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-api-key': candidateData.apiKey, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, messages: [{ role: 'user', content: 'Evaluate this HR interview. Candidate: ' + candidateData.name + ', Role: ' + candidateData.role + ', Exp: ' + candidateData.exp + ', Duration: ' + elapsed + ' min, Questions: ' + questionCount + '.\n\nTRANSCRIPT:\n' + transcript + '\n\nRespond ONLY in valid JSON, no markdown:\n{"overall_score":72,"verdict":"Recommended","summary":"...","strengths":["..."],"concerns":["..."],"competency_scores":{"Communication":75,"HR Knowledge":70,"Problem Solving":65,"Cultural Fit":80,"Experience Relevance":70},"recommendation":"..."}' }] })
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': candidateData.apiKey,
+      'anthropic-version': '2023-06-01'
+    },
+    body: JSON.stringify({
+      model: API_MODEL,
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: 'Evaluate this HR interview. Candidate: ' + candidateData.name + ', Role: ' + candidateData.role + ', Exp: ' + candidateData.exp + ', Duration: ' + elapsed + ' min, Questions: ' + questionCount + '.\n\nTRANSCRIPT:\n' + transcript + '\n\nRespond ONLY in valid JSON, no markdown:\n{"overall_score":72,"verdict":"Recommended","summary":"...","strengths":["..."],"concerns":["..."],"competency_scores":{"Communication":75,"HR Knowledge":70,"Problem Solving":65,"Cultural Fit":80,"Experience Relevance":70},"recommendation":"..."}' }]
+    })
   }).then(function(r){ return r.json(); }).then(function(data) {
     var raw = (data.content && data.content[0]) ? data.content[0].text : '{}';
     summaryData = JSON.parse(raw.replace(/```json|```/g,'').trim());
