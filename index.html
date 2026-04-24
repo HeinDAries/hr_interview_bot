@@ -10,8 +10,10 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0f0f0f;--surface:#181818;--surface2:#222;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f0ede8;--muted:#777;--accent:#c9a96e;--accent2:#e8d5b0;--danger:#e05555;--green:#4caf7d}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.6;overflow:hidden}
+
+/* ── SETUP SCREEN ── */
 #setup-screen{height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;animation:fadeIn .6s ease;overflow-y:auto}
-.setup-card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:2.5rem;max-width:460px;width:100%}
+.setup-card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:2.5rem;max-width:480px;width:100%}
 .logo-wrap{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem}
 .logo-mark{width:44px;height:44px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .logo-mark svg{width:22px;height:22px;fill:#1a1a1a}
@@ -24,10 +26,19 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .field select option{background:#222}
 .field textarea{resize:vertical;min-height:70px;line-height:1.5}
 .section-label{font-size:11px;font-weight:500;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin:1.2rem 0 .6rem;border-top:1px solid var(--border);padding-top:1rem}
+.api-key-wrap{position:relative}
+.api-key-wrap input{padding-right:44px}
+.toggle-key-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;display:flex;align-items:center}
+.toggle-key-btn:hover{color:var(--accent)}
 .info-note{background:#1a1f1a;border:1px solid #2a3a2a;border-radius:9px;padding:9px 13px;margin-bottom:1rem;font-size:12px;color:#7db87d;line-height:1.5}
+.info-note a{color:var(--accent);text-decoration:none}
+.info-note a:hover{text-decoration:underline}
 .start-btn{width:100%;padding:13px;background:var(--accent);border:none;border-radius:10px;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
 .start-btn:hover{background:var(--accent2);transform:translateY(-1px)}
 .start-btn svg{width:16px;height:16px;fill:#1a1a1a}
+.start-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* ── INTERVIEW SCREEN ── */
 #interview-screen{height:100vh;display:none;flex-direction:column}
 .iheader{padding:.9rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .cinfo{display:flex;align-items:center;gap:10px}
@@ -81,6 +92,8 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .send-txt-btn{background:var(--accent);border:none;border-radius:9px;width:36px;height:36px;cursor:pointer;display:none;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0}
 .send-txt-btn:hover{background:var(--accent2)}
 .send-txt-btn svg{width:15px;height:15px;fill:#1a1a1a}
+
+/* ── SUMMARY SCREEN ── */
 #summary-screen{height:100vh;display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem;animation:fadeIn .6s ease}
 .sum-card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:2.5rem;max-width:500px;width:100%;text-align:center}
 .score-ring{width:84px;height:84px;border-radius:50%;border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 1.4rem;flex-direction:column}
@@ -96,6 +109,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .dl-btn:hover{background:var(--accent2)}
 .rs-btn{width:100%;padding:11px;background:transparent;border:1px solid var(--border2);border-radius:10px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
 .rs-btn:hover{color:var(--text)}
+
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes msgIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 @keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
@@ -106,12 +120,34 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 </head>
 <body>
 
+<!-- ── SETUP SCREEN ── -->
 <div id="setup-screen">
   <div class="setup-card">
     <div class="logo-wrap">
-      <div class="logo-mark"><svg viewBox="0 0 24 24"><path d="M12 1a11 11 0 100 22A11 11 0 0012 1zm-1.5 15.5v-9l7 4.5-7 4.5z"/></svg></div>
-      <div><div class="logo-title">HR Interview AI</div><div class="logo-sub">Voice-powered candidate screening</div></div>
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 1a11 11 0 100 22A11 11 0 0012 1zm-1.5 15.5v-9l7 4.5-7 4.5z"/></svg>
+      </div>
+      <div>
+        <div class="logo-title">HR Interview AI</div>
+        <div class="logo-sub">Voice-powered candidate screening</div>
+      </div>
     </div>
+
+    <div class="section-label">Gemini API Key</div>
+    <div class="field">
+      <label>Your Gemini API Key</label>
+      <div class="api-key-wrap">
+        <input type="password" id="gemini-key" placeholder="AIza…" autocomplete="off" />
+        <button class="toggle-key-btn" onclick="toggleKeyVisibility()" title="Show/hide key">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="info-note">
+      ✓ Free Gemini API key from <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a> &nbsp;·&nbsp; Key stays in your browser only
+    </div>
+
+    <div class="section-label">Candidate Info</div>
     <div class="field"><label>Candidate Name</label><input type="text" id="candidate-name" placeholder="e.g. Aung Kyaw Zin" /></div>
     <div class="field">
       <label>Role Applied For</label>
@@ -135,15 +171,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
       <label>Job Description (optional)</label>
       <textarea id="jd-input" placeholder="Paste key responsibilities or requirements to sharpen questions…"></textarea>
     </div>
-    <div class="section-label">AI Engine</div>
-    <div class="info-note">✓ Claude via AWstore &nbsp;·&nbsp; Browser TTS for voice</div>
-    <button class="start-btn" onclick="startInterview()">
+
+    <button class="start-btn" id="start-btn" onclick="startInterview()">
       <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 3.39-3.4 6-6.91 6s-6.42-2.61-6.91-6H2.1C2.58 14.93 6 18 10 18.93V21h4v-2.07C17.98 18 21.42 14.93 21.9 11H17.9z"/></svg>
       Start Interview
     </button>
   </div>
 </div>
 
+<!-- ── INTERVIEW SCREEN ── -->
 <div id="interview-screen">
   <div class="iheader">
     <div class="cinfo">
@@ -182,6 +218,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   </div>
 </div>
 
+<!-- ── SUMMARY SCREEN ── -->
 <div id="summary-screen">
   <div class="sum-card">
     <div class="score-ring"><span class="snum" id="final-score">--</span><span class="slbl">/ 100</span></div>
@@ -198,11 +235,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 </div>
 
 <script>
-// ── WORKER URL — replace after Cloudflare deploy ─────────
-// Step 4 of setup guide: paste your worker URL here
-var WORKER_URL = 'https://hr-proxy.baheinkyaw-biz.workers.dev';
-// ─────────────────────────────────────────────────────────
-
+// ── STATE ─────────────────────────────────────────────────
 var conversationHistory = [];
 var candidateData = {};
 var questionCount = 0;
@@ -215,24 +248,55 @@ var isListening = false;
 var isSpeaking = false;
 var recognition = null;
 var pendingTranscript = '';
+var GEMINI_KEY = '';
 
-// ── API CALL via Worker ───────────────────────────────────
-async function callClaude(messages, systemPrompt, maxTokens) {
+// ── GEMINI API ────────────────────────────────────────────
+// Uses gemini-2.0-flash — fast, free tier, great for conversation
+async function callGemini(messages, systemPrompt, maxTokens) {
+  var contents = [];
+
+  // Gemini uses 'user'/'model' roles (not 'assistant')
+  messages.forEach(function(m) {
+    contents.push({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    });
+  });
+
   var body = {
-    model: 'claude-sonnet-4',
-    max_tokens: maxTokens || 300,
-    messages: messages
+    system_instruction: systemPrompt ? { parts: [{ text: systemPrompt }] } : undefined,
+    contents: contents,
+    generationConfig: {
+      maxOutputTokens: maxTokens || 300,
+      temperature: 0.8,
+      topP: 0.95
+    }
   };
-  if (systemPrompt) body.system = systemPrompt;
 
-  var r = await fetch(WORKER_URL, {
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
+
+  var r = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
+
+  if (!r.ok) {
+    var err = await r.json();
+    throw new Error((err.error && err.error.message) || 'Gemini API error ' + r.status);
+  }
+
   var data = await r.json();
-  if (data.content && data.content[0]) return data.content[0].text;
-  throw new Error(data.error || JSON.stringify(data));
+  if (data.candidates && data.candidates[0] && data.candidates[0].content) {
+    return data.candidates[0].content.parts[0].text;
+  }
+  throw new Error('No response from Gemini');
+}
+
+// ── KEY VISIBILITY TOGGLE ─────────────────────────────────
+function toggleKeyVisibility() {
+  var inp = document.getElementById('gemini-key');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
 // ── HELPERS ──────────────────────────────────────────────
@@ -365,14 +429,19 @@ function getSystemPrompt() {
 
 // ── START ─────────────────────────────────────────────────
 function startInterview() {
+  var key  = document.getElementById('gemini-key').value.trim();
   var name = document.getElementById('candidate-name').value.trim();
+  if (!key)  { alert('Please enter your Gemini API key.'); return; }
   if (!name) { alert('Please enter the candidate name.'); return; }
+
+  GEMINI_KEY = key;
   candidateData = {
     name: name,
     role: document.getElementById('role-select').value,
     exp:  document.getElementById('exp-select').value,
     jd:   document.getElementById('jd-input').value.trim()
   };
+
   startTime=Date.now(); questionCount=0; conversationHistory=[];
   isEnding=false; summaryData=null; isMuted=false; isTextMode=false; isSpeaking=false; isListening=false;
 
@@ -383,8 +452,10 @@ function startInterview() {
   document.getElementById('chat-area').innerHTML    = '';
   document.getElementById('text-input').style.display   = 'none';
   document.getElementById('send-txt-btn').style.display = 'none';
-  document.getElementById('type-toggle-btn').textContent='Use Text'; document.getElementById('type-toggle-btn').className='side-btn';
-  document.getElementById('mute-btn').textContent='Mute AI'; document.getElementById('mute-btn').className='side-btn';
+  document.getElementById('type-toggle-btn').textContent='Use Text';
+  document.getElementById('type-toggle-btn').className='side-btn';
+  document.getElementById('mute-btn').textContent='Mute AI';
+  document.getElementById('mute-btn').className='side-btn';
   document.getElementById('setup-screen').style.display    = 'none';
   document.getElementById('interview-screen').style.display = 'flex';
 
@@ -392,17 +463,21 @@ function startInterview() {
   setStatus('AI is thinking…','processing');
   showTyping();
 
-  callClaude([{role:'user',content:'Begin the interview now.'}], getSystemPrompt(), 200)
+  // First message to kick off the interview
+  var initMsg = [{role:'user', content:'Begin the interview now.'}];
+
+  callGemini(initMsg, getSystemPrompt(), 200)
     .then(function(reply){
       removeTyping();
-      conversationHistory.push({role:'assistant',content:reply});
+      conversationHistory.push({role:'assistant', content:reply});
       appendMessage('ai', reply);
       speakText(reply);
     })
     .catch(function(err){
       removeTyping(); console.error(err);
-      appendMessage('ai','Error connecting — is the Worker URL set correctly?');
-      setStatus('Connection error','');
+      var msg = err.message || 'Connection error';
+      appendMessage('ai', '⚠️ Error: ' + msg + '\n\nCheck your Gemini API key in Settings.');
+      setStatus('API error — check your key','');
     });
 }
 
@@ -413,13 +488,13 @@ function processAnswer(text) {
   appendMessage('user', text);
   questionCount++;
   document.getElementById('q-count').textContent = questionCount;
-  conversationHistory.push({role:'user',content:text});
+  conversationHistory.push({role:'user', content:text});
   showTyping();
 
-  callClaude(conversationHistory, getSystemPrompt(), 200)
+  callGemini(conversationHistory, getSystemPrompt(), 200)
     .then(function(reply){
       removeTyping();
-      conversationHistory.push({role:'assistant',content:reply});
+      conversationHistory.push({role:'assistant', content:reply});
       appendMessage('ai', reply);
       var low=reply.toLowerCase();
       if(!isEnding && low.includes('thank you') && (low.includes('covers everything')||low.includes('great conversation')||low.includes('be in touch'))){
@@ -455,21 +530,25 @@ function generateSummary(elapsed) {
   var transcript=conversationHistory.map(function(m){
     return (m.role==='assistant'?'Interviewer':'Candidate')+': '+m.content;
   }).join('\n\n');
+
   var prompt='Evaluate this HR interview.\nCandidate: '+candidateData.name
     +'\nRole: '+candidateData.role+'\nExperience: '+candidateData.exp
     +'\nDuration: '+elapsed+' min | Exchanges: '+questionCount
     +'\n\nTRANSCRIPT:\n'+transcript
-    +'\n\nReturn ONLY valid JSON (no markdown):\n'
+    +'\n\nReturn ONLY valid JSON, no markdown, no backticks:\n'
     +'{"overall_score":72,"verdict":"Recommended","summary":"...","strengths":["..."],"concerns":["..."],'
     +'"competency_scores":{"Communication":75,"HR Knowledge":70,"Problem Solving":65,"Cultural Fit":80,"Experience Relevance":70},'
     +'"recommendation":"..."}';
-  callClaude([{role:'user',content:prompt}], null, 1000)
+
+  callGemini([{role:'user',content:prompt}], null, 1000)
     .then(function(raw){
-      summaryData=JSON.parse(raw.replace(/```json|```/g,'').trim());
-      document.getElementById('final-score').textContent=summaryData.overall_score;
-      document.getElementById('stat-rec').textContent=summaryData.verdict==='Recommended'?'Yes':'Review';
+      var clean = raw.replace(/```json|```/g,'').trim();
+      summaryData = JSON.parse(clean);
+      document.getElementById('final-score').textContent = summaryData.overall_score;
+      document.getElementById('stat-rec').textContent = summaryData.verdict==='Recommended' ? 'Yes' : 'Review';
     })
-    .catch(function(){
+    .catch(function(err){
+      console.error('Summary error:', err);
       summaryData={overall_score:'--',verdict:'Manual Review',summary:'Auto-summary failed.',strengths:[],concerns:[],competency_scores:{},recommendation:'Manual review required.'};
       document.getElementById('final-score').textContent='--';
       document.getElementById('stat-rec').textContent='?';
@@ -478,9 +557,10 @@ function generateSummary(elapsed) {
 
 // ── EXCEL EXPORT ──────────────────────────────────────────
 function downloadExcel() {
-  if(!summaryData){alert('Summary still loading — please wait.');return;}
+  if(!summaryData){alert('Summary still loading — please wait a moment.');return;}
   var elapsed=document.getElementById('stat-min').textContent;
   var wb=XLSX.utils.book_new();
+
   var ws1=XLSX.utils.aoa_to_sheet([
     ['HR INTERVIEW REPORT',''],['',''],
     ['Candidate',candidateData.name],['Role',candidateData.role],['Experience',candidateData.exp],
@@ -490,6 +570,7 @@ function downloadExcel() {
   ]);
   ws1['!cols']=[{wch:22},{wch:60}];
   XLSX.utils.book_append_sheet(wb,ws1,'Summary');
+
   var compRows=[['Competency','Score','Rating']];
   Object.keys(summaryData.competency_scores||{}).forEach(function(k){
     var v=summaryData.competency_scores[k];
@@ -497,14 +578,17 @@ function downloadExcel() {
   });
   var ws2=XLSX.utils.aoa_to_sheet(compRows); ws2['!cols']=[{wch:25},{wch:10},{wch:22}];
   XLSX.utils.book_append_sheet(wb,ws2,'Competency Scores');
+
   var s=summaryData.strengths||[],c=summaryData.concerns||[],scRows=[['Strengths','Concerns']];
   for(var i=0;i<Math.max(s.length,c.length);i++) scRows.push([s[i]||'',c[i]||'']);
   var ws3=XLSX.utils.aoa_to_sheet(scRows); ws3['!cols']=[{wch:45},{wch:45}];
   XLSX.utils.book_append_sheet(wb,ws3,'Strengths & Concerns');
+
   var txRows=[['Speaker','Message']];
   conversationHistory.forEach(function(m){txRows.push([m.role==='assistant'?'Interviewer':'Candidate',m.content]);});
   var ws4=XLSX.utils.aoa_to_sheet(txRows); ws4['!cols']=[{wch:14},{wch:85}];
   XLSX.utils.book_append_sheet(wb,ws4,'Full Transcript');
+
   XLSX.writeFile(wb,'Interview_'+candidateData.name.replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
@@ -517,6 +601,7 @@ function restart() {
   document.getElementById('setup-screen').style.display='flex';
 }
 
+// Init voices
 if(window.speechSynthesis){
   window.speechSynthesis.getVoices();
   window.speechSynthesis.onvoiceschanged=function(){window.speechSynthesis.getVoices();};
