@@ -30,10 +30,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .api-key-wrap input{padding-right:44px}
 .toggle-key-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;display:flex;align-items:center}
 .toggle-key-btn:hover{color:var(--accent)}
-.info-note{background:#1a1f1a;border:1px solid #2a3a2a;border-radius:9px;padding:9px 13px;margin-bottom:1rem;font-size:12px;color:#7db87d;line-height:1.5}
-.info-note a{color:var(--accent);text-decoration:none}
-.info-note a:hover{text-decoration:underline}
-.start-btn{width:100%;padding:13px;background:var(--accent);border:none;border-radius:10px;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.start-btn{width:100%;padding:13px;background:var(--accent);border:none;border-radius:10px;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:.6rem}
 .start-btn:hover{background:var(--accent2);transform:translateY(-1px)}
 .start-btn svg{width:16px;height:16px;fill:#1a1a1a}
 .start-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
@@ -133,18 +130,15 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
       </div>
     </div>
 
-    <div class="section-label">Gemini API Key</div>
+    <div class="section-label">API Key</div>
     <div class="field">
-      <label>Your Gemini API Key</label>
+      <label>API Key</label>
       <div class="api-key-wrap">
-        <input type="password" id="gemini-key" placeholder="AIza…" autocomplete="off" />
+        <input type="password" id="gemini-key" value="AIzaSyDH5-AFyuPZqX5UozR8BA9pi_EgFGztGlU" autocomplete="off" />
         <button class="toggle-key-btn" onclick="toggleKeyVisibility()" title="Show/hide key">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
         </button>
       </div>
-    </div>
-    <div class="info-note">
-      ✓ Free Gemini API key from <a href="https://aistudio.google.com/app/apikey" target="_blank">aistudio.google.com</a> &nbsp;·&nbsp; Key stays in your browser only
     </div>
 
     <div class="section-label">Candidate Info</div>
@@ -250,12 +244,27 @@ var recognition = null;
 var pendingTranscript = '';
 var GEMINI_KEY = '';
 
-// ── GEMINI API ────────────────────────────────────────────
-// Uses gemini-2.0-flash — fast, free tier, great for conversation
-async function callGemini(messages, systemPrompt, maxTokens) {
-  var contents = [];
+// ── RATE LIMITING (Free tier: 5 RPM) ──────────────────────
+// Floor of 12s between calls; queue requests if user answers too fast
+var lastApiCallAt = 0;
+var MIN_CALL_INTERVAL = 12000; // ms — 60s / 5 RPM = 12s
 
-  // Gemini uses 'user'/'model' roles (not 'assistant')
+async function rateLimit() {
+  var now = Date.now();
+  var sinceLast = now - lastApiCallAt;
+  if (sinceLast < MIN_CALL_INTERVAL) {
+    var wait = MIN_CALL_INTERVAL - sinceLast;
+    await new Promise(function(r){ setTimeout(r, wait); });
+  }
+  lastApiCallAt = Date.now();
+}
+
+// ── GEMINI API ────────────────────────────────────────────
+// Uses gemini-2.5-flash — current free-tier model
+async function callGemini(messages, systemPrompt, maxTokens) {
+  await rateLimit();
+
+  var contents = [];
   messages.forEach(function(m) {
     contents.push({
       role: m.role === 'assistant' ? 'model' : 'user',
@@ -273,7 +282,7 @@ async function callGemini(messages, systemPrompt, maxTokens) {
     }
   };
 
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + GEMINI_KEY;
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_KEY;
 
   var r = await fetch(url, {
     method: 'POST',
@@ -283,14 +292,14 @@ async function callGemini(messages, systemPrompt, maxTokens) {
 
   if (!r.ok) {
     var err = await r.json();
-    throw new Error((err.error && err.error.message) || 'Gemini API error ' + r.status);
+    throw new Error((err.error && err.error.message) || 'API error ' + r.status);
   }
 
   var data = await r.json();
   if (data.candidates && data.candidates[0] && data.candidates[0].content) {
     return data.candidates[0].content.parts[0].text;
   }
-  throw new Error('No response from Gemini');
+  throw new Error('No response from model');
 }
 
 // ── KEY VISIBILITY TOGGLE ─────────────────────────────────
@@ -318,8 +327,10 @@ function appendMessage(role, text) {
   var area = document.getElementById('chat-area');
   var div  = document.createElement('div');
   div.className = 'msg ' + role;
+  // Strip the [INTERVIEW_COMPLETE] token from displayed text
+  var displayText = text.replace(/\[INTERVIEW_COMPLETE\]/gi, '').trim();
   div.innerHTML = '<div class="msg-av">' + (role==='ai'?'AI':getInitials(candidateData.name)) + '</div>'
-                + '<div class="msg-bubble">' + text.replace(/\n/g,'<br>') + '</div>';
+                + '<div class="msg-bubble">' + displayText.replace(/\n/g,'<br>') + '</div>';
   area.appendChild(div);
   area.scrollTop = area.scrollHeight;
 }
@@ -338,7 +349,9 @@ function speakText(text, onDone) {
     if (onDone) onDone(); return;
   }
   window.speechSynthesis.cancel();
-  var utt = new SpeechSynthesisUtterance(text.replace(/[*_#`]/g,''));
+  // Strip token + markdown before speaking
+  var cleanText = text.replace(/\[INTERVIEW_COMPLETE\]/gi, '').replace(/[*_#`]/g,'').trim();
+  var utt = new SpeechSynthesisUtterance(cleanText);
   utt.rate = 0.95; utt.pitch = 1.05; utt.volume = 1;
   var voices = window.speechSynthesis.getVoices();
   var pref = voices.filter(function(v){
@@ -423,7 +436,8 @@ function getSystemPrompt() {
     + '- Cover: motivation & background, HR knowledge, process ownership, situational judgment, AI awareness.\n'
     + '- Calibrate difficulty to experience level.\n'
     + '- Never mention scores or evaluation criteria.\n'
-    + '- After 8–15 candidate exchanges, close: "That covers everything I needed — thank you ' + candidateData.name + ', this has been a great conversation. We\'ll be in touch soon!"\n'
+    + '- After 8–15 candidate exchanges, deliver a warm closing message thanking ' + candidateData.name + ' and saying you will be in touch.\n'
+    + '- IMPORTANT: When you deliver the final closing message (and ONLY then), append the exact token [INTERVIEW_COMPLETE] at the very end of your message. Do not use this token at any other time.\n'
     + '- Begin with a warm greeting and first question about their background.';
 }
 
@@ -431,7 +445,7 @@ function getSystemPrompt() {
 function startInterview() {
   var key  = document.getElementById('gemini-key').value.trim();
   var name = document.getElementById('candidate-name').value.trim();
-  if (!key)  { alert('Please enter your Gemini API key.'); return; }
+  if (!key)  { alert('Please enter the API key.'); return; }
   if (!name) { alert('Please enter the candidate name.'); return; }
 
   GEMINI_KEY = key;
@@ -444,6 +458,7 @@ function startInterview() {
 
   startTime=Date.now(); questionCount=0; conversationHistory=[];
   isEnding=false; summaryData=null; isMuted=false; isTextMode=false; isSpeaking=false; isListening=false;
+  lastApiCallAt = 0;
 
   document.getElementById('hdr-avatar').textContent = getInitials(name);
   document.getElementById('hdr-name').textContent   = name;
@@ -463,7 +478,6 @@ function startInterview() {
   setStatus('AI is thinking…','processing');
   showTyping();
 
-  // First message to kick off the interview
   var initMsg = [{role:'user', content:'Begin the interview now.'}];
 
   callGemini(initMsg, getSystemPrompt(), 200)
@@ -476,7 +490,7 @@ function startInterview() {
     .catch(function(err){
       removeTyping(); console.error(err);
       var msg = err.message || 'Connection error';
-      appendMessage('ai', '⚠️ Error: ' + msg + '\n\nCheck your Gemini API key in Settings.');
+      appendMessage('ai', '⚠️ Error: ' + msg + '\n\nCheck your API key in Settings.');
       setStatus('API error — check your key','');
     });
 }
@@ -496,15 +510,22 @@ function processAnswer(text) {
       removeTyping();
       conversationHistory.push({role:'assistant', content:reply});
       appendMessage('ai', reply);
-      var low=reply.toLowerCase();
-      if(!isEnding && low.includes('thank you') && (low.includes('covers everything')||low.includes('great conversation')||low.includes('be in touch'))){
-        isEnding=true; speakText(reply,function(){setTimeout(endInterview,1500);}); return;
+      // Detect end-of-interview via structured token
+      if(!isEnding && /\[INTERVIEW_COMPLETE\]/i.test(reply)){
+        isEnding=true;
+        speakText(reply, function(){ setTimeout(endInterview, 1500); });
+        return;
       }
       speakText(reply);
     })
     .catch(function(err){
       removeTyping(); console.error(err);
-      appendMessage('ai','Connection issue — please try again.');
+      var msg = err.message || '';
+      if (/quota|rate|429/i.test(msg)) {
+        appendMessage('ai','Rate limit hit — please wait ~12 seconds and try again.');
+      } else {
+        appendMessage('ai','Connection issue — please try again.');
+      }
       setStatus('Tap mic to answer',''); setMicState('idle');
     });
 }
@@ -528,7 +549,8 @@ function endInterview() {
 
 function generateSummary(elapsed) {
   var transcript=conversationHistory.map(function(m){
-    return (m.role==='assistant'?'Interviewer':'Candidate')+': '+m.content;
+    var content = m.content.replace(/\[INTERVIEW_COMPLETE\]/gi,'').trim();
+    return (m.role==='assistant'?'Interviewer':'Candidate')+': '+content;
   }).join('\n\n');
 
   var prompt='Evaluate this HR interview.\nCandidate: '+candidateData.name
@@ -585,7 +607,10 @@ function downloadExcel() {
   XLSX.utils.book_append_sheet(wb,ws3,'Strengths & Concerns');
 
   var txRows=[['Speaker','Message']];
-  conversationHistory.forEach(function(m){txRows.push([m.role==='assistant'?'Interviewer':'Candidate',m.content]);});
+  conversationHistory.forEach(function(m){
+    var content = m.content.replace(/\[INTERVIEW_COMPLETE\]/gi,'').trim();
+    txRows.push([m.role==='assistant'?'Interviewer':'Candidate', content]);
+  });
   var ws4=XLSX.utils.aoa_to_sheet(txRows); ws4['!cols']=[{wch:14},{wch:85}];
   XLSX.utils.book_append_sheet(wb,ws4,'Full Transcript');
 
