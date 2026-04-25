@@ -11,7 +11,6 @@
 :root{--bg:#0f0f0f;--surface:#181818;--surface2:#222;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f0ede8;--muted:#777;--accent:#c9a96e;--accent2:#e8d5b0;--danger:#e05555;--green:#4caf7d}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-weight:300;font-size:15px;line-height:1.6;overflow:hidden}
 
-/* ── SETUP SCREEN ── */
 #setup-screen{height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem;animation:fadeIn .6s ease;overflow-y:auto}
 .setup-card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:2.5rem;max-width:480px;width:100%}
 .logo-wrap{display:flex;align-items:center;gap:12px;margin-bottom:1.5rem}
@@ -35,7 +34,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .start-btn svg{width:16px;height:16px;fill:#1a1a1a}
 .start-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
 
-/* ── INTERVIEW SCREEN ── */
 #interview-screen{height:100vh;display:none;flex-direction:column}
 .iheader{padding:.9rem 1.4rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .cinfo{display:flex;align-items:center;gap:10px}
@@ -90,7 +88,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .send-txt-btn:hover{background:var(--accent2)}
 .send-txt-btn svg{width:15px;height:15px;fill:#1a1a1a}
 
-/* ── SUMMARY SCREEN ── */
 #summary-screen{height:100vh;display:none;flex-direction:column;align-items:center;justify-content:center;padding:2rem;animation:fadeIn .6s ease}
 .sum-card{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:2.5rem;max-width:500px;width:100%;text-align:center}
 .score-ring{width:84px;height:84px;border-radius:50%;border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 1.4rem;flex-direction:column}
@@ -106,6 +103,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .dl-btn:hover{background:var(--accent2)}
 .rs-btn{width:100%;padding:11px;background:transparent;border:1px solid var(--border2);border-radius:10px;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s}
 .rs-btn:hover{color:var(--text)}
+.err-note{background:#2e1a1a;border:1px solid #5a1a1a;border-radius:9px;padding:9px 13px;margin:0 0 12px;font-size:11px;color:#e08585;line-height:1.5;text-align:left;display:none}
 
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 @keyframes msgIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
@@ -117,7 +115,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 </head>
 <body>
 
-<!-- ── SETUP SCREEN ── -->
 <div id="setup-screen">
   <div class="setup-card">
     <div class="logo-wrap">
@@ -173,7 +170,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   </div>
 </div>
 
-<!-- ── INTERVIEW SCREEN ── -->
 <div id="interview-screen">
   <div class="iheader">
     <div class="cinfo">
@@ -212,12 +208,12 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
   </div>
 </div>
 
-<!-- ── SUMMARY SCREEN ── -->
 <div id="summary-screen">
   <div class="sum-card">
     <div class="score-ring"><span class="snum" id="final-score">--</span><span class="slbl">/ 100</span></div>
     <h2 id="sum-name">Interview Complete</h2>
     <p class="sub" id="sum-sub">Processing…</p>
+    <div class="err-note" id="err-note"></div>
     <div class="stats-grid">
       <div class="sbox"><span class="sv" id="stat-q">0</span><span class="sk">Questions</span></div>
       <div class="sbox"><span class="sv" id="stat-min">0</span><span class="sk">Minutes</span></div>
@@ -229,7 +225,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 </div>
 
 <script>
-// ── STATE ─────────────────────────────────────────────────
 var conversationHistory = [];
 var candidateData = {};
 var questionCount = 0;
@@ -244,10 +239,9 @@ var recognition = null;
 var pendingTranscript = '';
 var GEMINI_KEY = '';
 
-// ── RATE LIMITING (Free tier: 5 RPM) ──────────────────────
-// Floor of 12s between calls; queue requests if user answers too fast
+// Rate limit: 5 RPM free tier → 12s floor between calls
 var lastApiCallAt = 0;
-var MIN_CALL_INTERVAL = 12000; // ms — 60s / 5 RPM = 12s
+var MIN_CALL_INTERVAL = 12000;
 
 async function rateLimit() {
   var now = Date.now();
@@ -259,8 +253,7 @@ async function rateLimit() {
   lastApiCallAt = Date.now();
 }
 
-// ── GEMINI API ────────────────────────────────────────────
-// Uses gemini-2.5-flash — current free-tier model
+// gemini-2.5-flash with relaxed safety filters
 async function callGemini(messages, systemPrompt, maxTokens) {
   await rateLimit();
 
@@ -276,10 +269,16 @@ async function callGemini(messages, systemPrompt, maxTokens) {
     system_instruction: systemPrompt ? { parts: [{ text: systemPrompt }] } : undefined,
     contents: contents,
     generationConfig: {
-      maxOutputTokens: maxTokens || 300,
+      maxOutputTokens: maxTokens || 400,
       temperature: 0.8,
       topP: 0.95
-    }
+    },
+    safetySettings: [
+      { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' }
+    ]
   };
 
   var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_KEY;
@@ -291,24 +290,37 @@ async function callGemini(messages, systemPrompt, maxTokens) {
   });
 
   if (!r.ok) {
-    var err = await r.json();
+    var err;
+    try { err = await r.json(); } catch(e) { err = {}; }
     throw new Error((err.error && err.error.message) || 'API error ' + r.status);
   }
 
   var data = await r.json();
-  if (data.candidates && data.candidates[0] && data.candidates[0].content) {
-    return data.candidates[0].content.parts[0].text;
+
+  if (data.promptFeedback && data.promptFeedback.blockReason) {
+    throw new Error('Blocked by safety filter: ' + data.promptFeedback.blockReason);
   }
-  throw new Error('No response from model');
+
+  if (data.candidates && data.candidates[0]) {
+    var cand = data.candidates[0];
+    if (cand.finishReason === 'SAFETY') {
+      throw new Error('Response blocked by safety filter');
+    }
+    if (cand.content && cand.content.parts && cand.content.parts[0]) {
+      return cand.content.parts[0].text;
+    }
+    if (cand.finishReason === 'MAX_TOKENS') {
+      throw new Error('Response truncated — token limit hit');
+    }
+  }
+  throw new Error('Empty response from model');
 }
 
-// ── KEY VISIBILITY TOGGLE ─────────────────────────────────
 function toggleKeyVisibility() {
   var inp = document.getElementById('gemini-key');
   inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
-// ── HELPERS ──────────────────────────────────────────────
 function getInitials(name) {
   return name.trim().split(/\s+/).map(function(n){ return n[0]; }).join('').toUpperCase().slice(0,2);
 }
@@ -327,7 +339,6 @@ function appendMessage(role, text) {
   var area = document.getElementById('chat-area');
   var div  = document.createElement('div');
   div.className = 'msg ' + role;
-  // Strip the [INTERVIEW_COMPLETE] token from displayed text
   var displayText = text.replace(/\[INTERVIEW_COMPLETE\]/gi, '').trim();
   div.innerHTML = '<div class="msg-av">' + (role==='ai'?'AI':getInitials(candidateData.name)) + '</div>'
                 + '<div class="msg-bubble">' + displayText.replace(/\n/g,'<br>') + '</div>';
@@ -342,14 +353,12 @@ function showTyping() {
 }
 function removeTyping() { var t = document.getElementById('typing-ind'); if (t) t.remove(); }
 
-// ── BROWSER TTS ───────────────────────────────────────────
 function speakText(text, onDone) {
   if (isMuted || !window.speechSynthesis) {
     isSpeaking = false; setMicState('idle'); setStatus('Tap mic to answer','');
     if (onDone) onDone(); return;
   }
   window.speechSynthesis.cancel();
-  // Strip token + markdown before speaking
   var cleanText = text.replace(/\[INTERVIEW_COMPLETE\]/gi, '').replace(/[*_#`]/g,'').trim();
   var utt = new SpeechSynthesisUtterance(cleanText);
   utt.rate = 0.95; utt.pitch = 1.05; utt.volume = 1;
@@ -376,7 +385,6 @@ function toggleMute() {
   if (isMuted && isSpeaking) skipSpeech();
 }
 
-// ── TEXT MODE ─────────────────────────────────────────────
 function toggleTextMode() {
   isTextMode = !isTextMode;
   document.getElementById('type-toggle-btn').textContent = isTextMode ? 'Use Voice' : 'Use Text';
@@ -394,7 +402,6 @@ function sendTextAnswer() {
 function handleTextKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendTextAnswer();} }
 function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
 
-// ── SPEECH RECOGNITION ────────────────────────────────────
 function initSpeechRecognition() {
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { setStatus('Voice not supported — use text mode',''); toggleTextMode(); return; }
@@ -424,7 +431,6 @@ function handleMicClick() {
   if(recognition){try{pendingTranscript='';recognition.start();}catch(e){setStatus('Tap mic to try again','');}}
 }
 
-// ── SYSTEM PROMPT ─────────────────────────────────────────
 function getSystemPrompt() {
   var jd = candidateData.jd ? '\n\nJOB DESCRIPTION:\n' + candidateData.jd : '';
   return 'You are a warm, professional HR interviewer conducting a structured screening interview.' + jd + '\n\n'
@@ -435,13 +441,13 @@ function getSystemPrompt() {
     + '- Probe naturally before switching topic.\n'
     + '- Cover: motivation & background, HR knowledge, process ownership, situational judgment, AI awareness.\n'
     + '- Calibrate difficulty to experience level.\n'
+    + '- Stay professional even if the candidate is rude, profane, or makes controversial statements. Note these for evaluation but do not lecture them.\n'
     + '- Never mention scores or evaluation criteria.\n'
     + '- After 8–15 candidate exchanges, deliver a warm closing message thanking ' + candidateData.name + ' and saying you will be in touch.\n'
     + '- IMPORTANT: When you deliver the final closing message (and ONLY then), append the exact token [INTERVIEW_COMPLETE] at the very end of your message. Do not use this token at any other time.\n'
     + '- Begin with a warm greeting and first question about their background.';
 }
 
-// ── START ─────────────────────────────────────────────────
 function startInterview() {
   var key  = document.getElementById('gemini-key').value.trim();
   var name = document.getElementById('candidate-name').value.trim();
@@ -471,6 +477,7 @@ function startInterview() {
   document.getElementById('type-toggle-btn').className='side-btn';
   document.getElementById('mute-btn').textContent='Mute AI';
   document.getElementById('mute-btn').className='side-btn';
+  document.getElementById('err-note').style.display = 'none';
   document.getElementById('setup-screen').style.display    = 'none';
   document.getElementById('interview-screen').style.display = 'flex';
 
@@ -480,7 +487,7 @@ function startInterview() {
 
   var initMsg = [{role:'user', content:'Begin the interview now.'}];
 
-  callGemini(initMsg, getSystemPrompt(), 200)
+  callGemini(initMsg, getSystemPrompt(), 400)
     .then(function(reply){
       removeTyping();
       conversationHistory.push({role:'assistant', content:reply});
@@ -490,12 +497,11 @@ function startInterview() {
     .catch(function(err){
       removeTyping(); console.error(err);
       var msg = err.message || 'Connection error';
-      appendMessage('ai', '⚠️ Error: ' + msg + '\n\nCheck your API key in Settings.');
+      appendMessage('ai', '⚠️ Error: ' + msg + '\n\nCheck your API key.');
       setStatus('API error — check your key','');
     });
 }
 
-// ── PROCESS ANSWER ────────────────────────────────────────
 function processAnswer(text) {
   if(isEnding) return;
   setMicState('idle'); setStatus('Processing…','processing');
@@ -505,12 +511,11 @@ function processAnswer(text) {
   conversationHistory.push({role:'user', content:text});
   showTyping();
 
-  callGemini(conversationHistory, getSystemPrompt(), 200)
+  callGemini(conversationHistory, getSystemPrompt(), 400)
     .then(function(reply){
       removeTyping();
       conversationHistory.push({role:'assistant', content:reply});
       appendMessage('ai', reply);
-      // Detect end-of-interview via structured token
       if(!isEnding && /\[INTERVIEW_COMPLETE\]/i.test(reply)){
         isEnding=true;
         speakText(reply, function(){ setTimeout(endInterview, 1500); });
@@ -522,15 +527,16 @@ function processAnswer(text) {
       removeTyping(); console.error(err);
       var msg = err.message || '';
       if (/quota|rate|429/i.test(msg)) {
-        appendMessage('ai','Rate limit hit — please wait ~12 seconds and try again.');
+        appendMessage('ai','⚠️ Rate limit hit — please wait ~12 seconds and try again.');
+      } else if (/safety|blocked/i.test(msg)) {
+        appendMessage('ai','⚠️ Response blocked by safety filter. Please rephrase.');
       } else {
-        appendMessage('ai','Connection issue — please try again.');
+        appendMessage('ai','⚠️ ' + (msg || 'Connection issue') + ' — please try again.');
       }
       setStatus('Tap mic to answer',''); setMicState('idle');
     });
 }
 
-// ── END + SUMMARY ─────────────────────────────────────────
 function endInterview() {
   window.speechSynthesis && window.speechSynthesis.cancel();
   recognition && recognition.stop();
@@ -544,6 +550,7 @@ function endInterview() {
   document.getElementById('stat-min').textContent=elapsed;
   document.getElementById('final-score').textContent='…';
   document.getElementById('stat-rec').textContent='…';
+  document.getElementById('err-note').style.display='none';
   generateSummary(elapsed);
 }
 
@@ -553,31 +560,39 @@ function generateSummary(elapsed) {
     return (m.role==='assistant'?'Interviewer':'Candidate')+': '+content;
   }).join('\n\n');
 
-  var prompt='Evaluate this HR interview.\nCandidate: '+candidateData.name
+  var prompt='Evaluate this HR interview objectively. Score the candidate honestly even if they were rude, unprofessional, or made concerning statements — those are evaluation signals, not reasons to refuse.\n\n'
+    +'Candidate: '+candidateData.name
     +'\nRole: '+candidateData.role+'\nExperience: '+candidateData.exp
     +'\nDuration: '+elapsed+' min | Exchanges: '+questionCount
     +'\n\nTRANSCRIPT:\n'+transcript
-    +'\n\nReturn ONLY valid JSON, no markdown, no backticks:\n'
-    +'{"overall_score":72,"verdict":"Recommended","summary":"...","strengths":["..."],"concerns":["..."],'
+    +'\n\nReturn ONLY valid JSON, no markdown, no backticks, no preamble:\n'
+    +'{"overall_score":72,"verdict":"Recommended","summary":"2-3 sentence overview","strengths":["..."],"concerns":["..."],'
     +'"competency_scores":{"Communication":75,"HR Knowledge":70,"Problem Solving":65,"Cultural Fit":80,"Experience Relevance":70},'
-    +'"recommendation":"..."}';
+    +'"recommendation":"hiring recommendation"}';
 
-  callGemini([{role:'user',content:prompt}], null, 1000)
+  callGemini([{role:'user',content:prompt}], null, 2000)
     .then(function(raw){
       var clean = raw.replace(/```json|```/g,'').trim();
+      var firstBrace = clean.indexOf('{');
+      var lastBrace = clean.lastIndexOf('}');
+      if (firstBrace >= 0 && lastBrace > firstBrace) {
+        clean = clean.substring(firstBrace, lastBrace + 1);
+      }
       summaryData = JSON.parse(clean);
       document.getElementById('final-score').textContent = summaryData.overall_score;
       document.getElementById('stat-rec').textContent = summaryData.verdict==='Recommended' ? 'Yes' : 'Review';
     })
     .catch(function(err){
       console.error('Summary error:', err);
-      summaryData={overall_score:'--',verdict:'Manual Review',summary:'Auto-summary failed.',strengths:[],concerns:[],competency_scores:{},recommendation:'Manual review required.'};
+      summaryData={overall_score:'--',verdict:'Manual Review',summary:'Auto-summary failed: '+(err.message||'unknown error')+'. Transcript is still available.',strengths:[],concerns:[],competency_scores:{},recommendation:'Manual review required.'};
       document.getElementById('final-score').textContent='--';
       document.getElementById('stat-rec').textContent='?';
+      var note = document.getElementById('err-note');
+      note.textContent = '⚠ Summary generation failed: ' + (err.message || 'unknown error') + '. Transcript export still works.';
+      note.style.display = 'block';
     });
 }
 
-// ── EXCEL EXPORT ──────────────────────────────────────────
 function downloadExcel() {
   if(!summaryData){alert('Summary still loading — please wait a moment.');return;}
   var elapsed=document.getElementById('stat-min').textContent;
@@ -617,7 +632,6 @@ function downloadExcel() {
   XLSX.writeFile(wb,'Interview_'+candidateData.name.replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
-// ── RESTART ───────────────────────────────────────────────
 function restart() {
   summaryData=null;questionCount=0;isEnding=false;isMuted=false;isTextMode=false;
   conversationHistory=[];isSpeaking=false;isListening=false;
@@ -626,7 +640,6 @@ function restart() {
   document.getElementById('setup-screen').style.display='flex';
 }
 
-// Init voices
 if(window.speechSynthesis){
   window.speechSynthesis.getVoices();
   window.speechSynthesis.onvoiceschanged=function(){window.speechSynthesis.getVoices();};
