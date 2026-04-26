@@ -128,16 +128,28 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
       </div>
     </div>
 
-    <div class="section-label">Groq API</div>
+    <div class="section-label">Groq API — Interview Brain</div>
     <div class="field">
-      <label>API Key</label>
+      <label>Groq API Key</label>
       <div class="api-key-wrap">
         <input type="password" id="groq-key" placeholder="Paste your Groq API key (gsk_…)" autocomplete="off" />
-        <button class="toggle-key-btn" onclick="toggleKeyVisibility()" title="Show/hide key">
+        <button class="toggle-key-btn" onclick="toggleKeyVisibility('groq-key')" title="Show/hide key">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
         </button>
       </div>
       <div class="model-hint">Model: llama-3.3-70b-versatile — Get key at console.groq.com</div>
+    </div>
+
+    <div class="section-label">Google Cloud — Voice (TTS)</div>
+    <div class="field">
+      <label>Google API Key <span style="color:var(--muted);font-weight:300;text-transform:none;letter-spacing:0">(optional — falls back to browser voice)</span></label>
+      <div class="api-key-wrap">
+        <input type="password" id="google-key" placeholder="Paste your Google Cloud API key (AIza…)" autocomplete="off" />
+        <button class="toggle-key-btn" onclick="toggleKeyVisibility('google-key')" title="Show/hide key">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+        </button>
+      </div>
+      <div class="model-hint">Uses en-US-Neural2-F voice — 1M chars/month free. Enable "Cloud Text-to-Speech API" in GCP first.</div>
     </div>
 
     <div class="section-label">Candidate Info</div>
@@ -240,6 +252,7 @@ var isSpeaking = false;
 var recognition = null;
 var pendingTranscript = '';
 var GROQ_KEY = '';
+var GOOGLE_KEY = '';
 
 // Groq free tier: 30 RPM for llama-3.3-70b — 2s floor is sufficient
 var lastApiCallAt = 0;
@@ -300,8 +313,8 @@ async function callGroq(messages, systemPrompt, maxTokens) {
   throw new Error('Empty response from Groq');
 }
 
-function toggleKeyVisibility() {
-  var inp = document.getElementById('groq-key');
+function toggleKeyVisibility(id) {
+  var inp = document.getElementById(id || 'groq-key');
   inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
@@ -338,12 +351,62 @@ function showTyping() {
 function removeTyping() { var t = document.getElementById('typing-ind'); if (t) t.remove(); }
 
 function speakText(text, onDone) {
-  if (isMuted || !window.speechSynthesis) {
+  if (isMuted) {
+    isSpeaking = false; setMicState('idle'); setStatus('Tap mic to answer','');
+    if (onDone) onDone(); return;
+  }
+  var cleanText = text.replace(/\[INTERVIEW_COMPLETE\]/gi, '').replace(/[*_#`]/g,'').trim();
+  if (!cleanText) { if (onDone) onDone(); return; }
+
+  // Google Cloud TTS if key available
+  if (GOOGLE_KEY) {
+    isSpeaking = true; setMicState('speaking'); setStatus('AI speaking… tap mic to skip','speaking');
+    fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + GOOGLE_KEY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        input: { text: cleanText },
+        voice: { languageCode: 'en-US', name: 'en-US-Neural2-F' },
+        audioConfig: { audioEncoding: 'MP3', speakingRate: 0.95, pitch: 1.0 }
+      })
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Google TTS error ' + r.status);
+      return r.json();
+    })
+    .then(function(data) {
+      var audio = new Audio('data:audio/mp3;base64,' + data.audioContent);
+      audio.onended = function() {
+        isSpeaking = false;
+        if (!isEnding) { setMicState('idle'); setStatus('Tap mic to answer',''); }
+        if (onDone) onDone();
+      };
+      audio.onerror = function() {
+        isSpeaking = false; setMicState('idle'); setStatus('Tap mic to answer','');
+        if (onDone) onDone();
+      };
+      // store ref so skipSpeech can stop it
+      window._currentAudio = audio;
+      audio.play();
+    })
+    .catch(function(err) {
+      console.warn('Google TTS failed, falling back to browser voice:', err);
+      isSpeaking = false;
+      speakWithBrowser(cleanText, onDone);
+    });
+    return;
+  }
+
+  // Fallback: browser Web Speech API
+  speakWithBrowser(cleanText, onDone);
+}
+
+function speakWithBrowser(cleanText, onDone) {
+  if (!window.speechSynthesis) {
     isSpeaking = false; setMicState('idle'); setStatus('Tap mic to answer','');
     if (onDone) onDone(); return;
   }
   window.speechSynthesis.cancel();
-  var cleanText = text.replace(/\[INTERVIEW_COMPLETE\]/gi, '').replace(/[*_#`]/g,'').trim();
   var utt = new SpeechSynthesisUtterance(cleanText);
   utt.rate = 0.95; utt.pitch = 1.05; utt.volume = 1;
   var voices = window.speechSynthesis.getVoices();
@@ -359,6 +422,12 @@ function speakText(text, onDone) {
   window.speechSynthesis.speak(utt);
 }
 function skipSpeech() {
+  // Stop Google TTS audio if playing
+  if (window._currentAudio) {
+    window._currentAudio.pause();
+    window._currentAudio.currentTime = 0;
+    window._currentAudio = null;
+  }
   window.speechSynthesis && window.speechSynthesis.cancel();
   isSpeaking=false; setMicState('idle'); setStatus('Tap mic to answer','');
 }
@@ -439,6 +508,7 @@ function startInterview() {
   if (!name) { alert('Please enter the candidate name.'); return; }
 
   GROQ_KEY = key;
+  GOOGLE_KEY = document.getElementById('google-key').value.trim();
   candidateData = {
     name: name,
     role: document.getElementById('role-select').value,
