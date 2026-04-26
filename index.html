@@ -29,6 +29,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .api-key-wrap input{padding-right:44px}
 .toggle-key-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;display:flex;align-items:center}
 .toggle-key-btn:hover{color:var(--accent)}
+.model-hint{font-size:11px;color:var(--muted);margin-top:5px}
 .start-btn{width:100%;padding:13px;background:var(--accent);border:none;border-radius:10px;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:.6rem}
 .start-btn:hover{background:var(--accent2);transform:translateY(-1px)}
 .start-btn svg{width:16px;height:16px;fill:#1a1a1a}
@@ -127,15 +128,16 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
       </div>
     </div>
 
-    <div class="section-label">API Key</div>
+    <div class="section-label">Groq API</div>
     <div class="field">
       <label>API Key</label>
       <div class="api-key-wrap">
-        <input type="password" id="gemini-key" value="AIzaSyDH5-AFyuPZqX5UozR8BA9pi_EgFGztGlU" autocomplete="off" />
+        <input type="password" id="groq-key" placeholder="Paste your Groq API key (gsk_…)" autocomplete="off" />
         <button class="toggle-key-btn" onclick="toggleKeyVisibility()" title="Show/hide key">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
         </button>
       </div>
+      <div class="model-hint">Model: llama-3.3-70b-versatile — Get key at console.groq.com</div>
     </div>
 
     <div class="section-label">Candidate Info</div>
@@ -237,11 +239,11 @@ var isListening = false;
 var isSpeaking = false;
 var recognition = null;
 var pendingTranscript = '';
-var GEMINI_KEY = '';
+var GROQ_KEY = '';
 
-// Rate limit: 5 RPM free tier → 12s floor between calls
+// Groq free tier: 30 RPM for llama-3.3-70b — 2s floor is sufficient
 var lastApiCallAt = 0;
-var MIN_CALL_INTERVAL = 12000;
+var MIN_CALL_INTERVAL = 2000;
 
 async function rateLimit() {
   var now = Date.now();
@@ -253,71 +255,53 @@ async function rateLimit() {
   lastApiCallAt = Date.now();
 }
 
-// gemini-2.5-flash with relaxed safety filters
-async function callGemini(messages, systemPrompt, maxTokens) {
+// Groq Chat Completions API (OpenAI-compatible)
+async function callGroq(messages, systemPrompt, maxTokens) {
   await rateLimit();
 
-  var contents = [];
+  var msgs = [];
+  if (systemPrompt) {
+    msgs.push({ role: 'system', content: systemPrompt });
+  }
   messages.forEach(function(m) {
-    contents.push({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }]
-    });
+    msgs.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content });
   });
 
   var body = {
-    system_instruction: systemPrompt ? { parts: [{ text: systemPrompt }] } : undefined,
-    contents: contents,
-    generationConfig: {
-      maxOutputTokens: maxTokens || 400,
-      temperature: 0.8,
-      topP: 0.95
-    },
-    safetySettings: [
-      { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_ONLY_HIGH' },
-      { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_ONLY_HIGH' },
-      { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-      { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' }
-    ]
+    model: 'llama-3.3-70b-versatile',
+    messages: msgs,
+    max_tokens: maxTokens || 400,
+    temperature: 0.8,
+    top_p: 0.95,
+    stream: false
   };
 
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=' + GEMINI_KEY;
-
-  var r = await fetch(url, {
+  var r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + GROQ_KEY
+    },
     body: JSON.stringify(body)
   });
 
   if (!r.ok) {
     var err;
     try { err = await r.json(); } catch(e) { err = {}; }
-    throw new Error((err.error && err.error.message) || 'API error ' + r.status);
+    var msg = (err.error && (err.error.message || err.error.type)) || ('API error ' + r.status);
+    throw new Error(msg);
   }
 
   var data = await r.json();
 
-  if (data.promptFeedback && data.promptFeedback.blockReason) {
-    throw new Error('Blocked by safety filter: ' + data.promptFeedback.blockReason);
+  if (data.choices && data.choices[0] && data.choices[0].message) {
+    return data.choices[0].message.content;
   }
-
-  if (data.candidates && data.candidates[0]) {
-    var cand = data.candidates[0];
-    if (cand.finishReason === 'SAFETY') {
-      throw new Error('Response blocked by safety filter');
-    }
-    if (cand.content && cand.content.parts && cand.content.parts[0]) {
-      return cand.content.parts[0].text;
-    }
-    if (cand.finishReason === 'MAX_TOKENS') {
-      throw new Error('Response truncated — token limit hit');
-    }
-  }
-  throw new Error('Empty response from model');
+  throw new Error('Empty response from Groq');
 }
 
 function toggleKeyVisibility() {
-  var inp = document.getElementById('gemini-key');
+  var inp = document.getElementById('groq-key');
   inp.type = inp.type === 'password' ? 'text' : 'password';
 }
 
@@ -449,12 +433,12 @@ function getSystemPrompt() {
 }
 
 function startInterview() {
-  var key  = document.getElementById('gemini-key').value.trim();
+  var key  = document.getElementById('groq-key').value.trim();
   var name = document.getElementById('candidate-name').value.trim();
-  if (!key)  { alert('Please enter the API key.'); return; }
+  if (!key)  { alert('Please enter your Groq API key.'); return; }
   if (!name) { alert('Please enter the candidate name.'); return; }
 
-  GEMINI_KEY = key;
+  GROQ_KEY = key;
   candidateData = {
     name: name,
     role: document.getElementById('role-select').value,
@@ -487,7 +471,7 @@ function startInterview() {
 
   var initMsg = [{role:'user', content:'Begin the interview now.'}];
 
-  callGemini(initMsg, getSystemPrompt(), 400)
+  callGroq(initMsg, getSystemPrompt(), 400)
     .then(function(reply){
       removeTyping();
       conversationHistory.push({role:'assistant', content:reply});
@@ -497,7 +481,7 @@ function startInterview() {
     .catch(function(err){
       removeTyping(); console.error(err);
       var msg = err.message || 'Connection error';
-      appendMessage('ai', '⚠️ Error: ' + msg + '\n\nCheck your API key.');
+      appendMessage('ai', '⚠️ Error: ' + msg + '\n\nCheck your Groq API key at console.groq.com');
       setStatus('API error — check your key','');
     });
 }
@@ -511,7 +495,7 @@ function processAnswer(text) {
   conversationHistory.push({role:'user', content:text});
   showTyping();
 
-  callGemini(conversationHistory, getSystemPrompt(), 400)
+  callGroq(conversationHistory, getSystemPrompt(), 400)
     .then(function(reply){
       removeTyping();
       conversationHistory.push({role:'assistant', content:reply});
@@ -526,10 +510,10 @@ function processAnswer(text) {
     .catch(function(err){
       removeTyping(); console.error(err);
       var msg = err.message || '';
-      if (/quota|rate|429/i.test(msg)) {
-        appendMessage('ai','⚠️ Rate limit hit — please wait ~12 seconds and try again.');
-      } else if (/safety|blocked/i.test(msg)) {
-        appendMessage('ai','⚠️ Response blocked by safety filter. Please rephrase.');
+      if (/rate.limit|429|too many/i.test(msg)) {
+        appendMessage('ai','⚠️ Rate limit hit — please wait a moment and try again.');
+      } else if (/invalid.api.key|unauthorized|401/i.test(msg)) {
+        appendMessage('ai','⚠️ Invalid API key — check your Groq key at console.groq.com');
       } else {
         appendMessage('ai','⚠️ ' + (msg || 'Connection issue') + ' — please try again.');
       }
@@ -570,7 +554,7 @@ function generateSummary(elapsed) {
     +'"competency_scores":{"Communication":75,"HR Knowledge":70,"Problem Solving":65,"Cultural Fit":80,"Experience Relevance":70},'
     +'"recommendation":"hiring recommendation"}';
 
-  callGemini([{role:'user',content:prompt}], null, 2000)
+  callGroq([{role:'user',content:prompt}], null, 2000)
     .then(function(raw){
       var clean = raw.replace(/```json|```/g,'').trim();
       var firstBrace = clean.indexOf('{');
