@@ -25,11 +25,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 .field select option{background:#222}
 .field textarea{resize:vertical;min-height:70px;line-height:1.5}
 .section-label{font-size:11px;font-weight:500;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin:1.2rem 0 .6rem;border-top:1px solid var(--border);padding-top:1rem}
-.api-key-wrap{position:relative}
-.api-key-wrap input{padding-right:44px}
-.toggle-key-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);padding:4px;display:flex;align-items:center}
-.toggle-key-btn:hover{color:var(--accent)}
-.model-hint{font-size:11px;color:var(--muted);margin-top:5px}
 .start-btn{width:100%;padding:13px;background:var(--accent);border:none;border-radius:10px;color:#1a1a1a;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:.6rem}
 .start-btn:hover{background:var(--accent2);transform:translateY(-1px)}
 .start-btn svg{width:16px;height:16px;fill:#1a1a1a}
@@ -128,30 +123,6 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
       </div>
     </div>
 
-    <div class="section-label">Groq API — Interview Brain</div>
-    <div class="field">
-      <label>Groq API Key</label>
-      <div class="api-key-wrap">
-        <input type="password" id="groq-key" placeholder="Paste your Groq API key (gsk_…)" autocomplete="off" />
-        <button class="toggle-key-btn" onclick="toggleKeyVisibility('groq-key')" title="Show/hide key">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-        </button>
-      </div>
-      <div class="model-hint">Model: llama-3.3-70b-versatile — Get key at console.groq.com</div>
-    </div>
-
-    <div class="section-label">Google Cloud — Voice (TTS)</div>
-    <div class="field">
-      <label>Google API Key <span style="color:var(--muted);font-weight:300;text-transform:none;letter-spacing:0">(optional — falls back to browser voice)</span></label>
-      <div class="api-key-wrap">
-        <input type="password" id="google-key" placeholder="Paste your Google Cloud API key (AIza…)" autocomplete="off" />
-        <button class="toggle-key-btn" onclick="toggleKeyVisibility('google-key')" title="Show/hide key">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-        </button>
-      </div>
-      <div class="model-hint">Uses en-US-Neural2-D voice (male) — 1M chars/month free. Enable "Cloud Text-to-Speech API" in GCP first.</div>
-    </div>
-
     <div class="section-label">Candidate Info</div>
     <div class="field"><label>Candidate Name</label><input type="text" id="candidate-name" placeholder="e.g. Aung Kyaw Zin" /></div>
     <div class="field">
@@ -239,6 +210,10 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM San
 </div>
 
 <script>
+// ── CONFIG ────────────────────────────────────────────────────────────────
+var WORKER_URL = 'https://hr-proxy.baheinkyaw-biz.workers.dev';
+// ─────────────────────────────────────────────────────────────────────────
+
 var conversationHistory = [];
 var candidateData = {};
 var questionCount = 0;
@@ -251,10 +226,6 @@ var isListening = false;
 var isSpeaking = false;
 var recognition = null;
 var pendingTranscript = '';
-var GROQ_KEY = '';
-var GOOGLE_KEY = '';
-
-// Groq free tier: 30 RPM for llama-3.3-70b — 2s floor is sufficient
 var lastApiCallAt = 0;
 var MIN_CALL_INTERVAL = 2000;
 
@@ -262,60 +233,48 @@ async function rateLimit() {
   var now = Date.now();
   var sinceLast = now - lastApiCallAt;
   if (sinceLast < MIN_CALL_INTERVAL) {
-    var wait = MIN_CALL_INTERVAL - sinceLast;
-    await new Promise(function(r){ setTimeout(r, wait); });
+    await new Promise(function(r){ setTimeout(r, MIN_CALL_INTERVAL - sinceLast); });
   }
   lastApiCallAt = Date.now();
 }
 
-// Groq Chat Completions API (OpenAI-compatible)
 async function callGroq(messages, systemPrompt, maxTokens) {
   await rateLimit();
-
   var msgs = [];
-  if (systemPrompt) {
-    msgs.push({ role: 'system', content: systemPrompt });
-  }
+  if (systemPrompt) msgs.push({ role: 'system', content: systemPrompt });
   messages.forEach(function(m) {
     msgs.push({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content });
   });
-
-  var body = {
-    model: 'llama-3.1-8b-instant',
-    messages: msgs,
-    max_tokens: maxTokens || 400,
-    temperature: 0.8,
-    top_p: 0.95,
-    stream: false
-  };
-
-  var r = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+  var r = await fetch(WORKER_URL + '/groq', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + GROQ_KEY
-    },
-    body: JSON.stringify(body)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: msgs,
+      max_tokens: maxTokens || 400,
+      temperature: 0.8,
+      top_p: 0.95,
+      stream: false
+    })
   });
-
   if (!r.ok) {
-    var err;
-    try { err = await r.json(); } catch(e) { err = {}; }
-    var msg = (err.error && (err.error.message || err.error.type)) || ('API error ' + r.status);
-    throw new Error(msg);
+    var err; try { err = await r.json(); } catch(e) { err = {}; }
+    throw new Error((err.error && (err.error.message || err.error.type)) || ('Worker error ' + r.status));
   }
-
   var data = await r.json();
-
-  if (data.choices && data.choices[0] && data.choices[0].message) {
-    return data.choices[0].message.content;
-  }
-  throw new Error('Empty response from Groq');
+  if (data.choices && data.choices[0] && data.choices[0].message) return data.choices[0].message.content;
+  throw new Error('Empty response from Worker');
 }
 
-function toggleKeyVisibility(id) {
-  var inp = document.getElementById(id || 'groq-key');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
+async function callTTS(text) {
+  var r = await fetch(WORKER_URL + '/tts', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text })
+  });
+  if (!r.ok) throw new Error('TTS Worker error ' + r.status);
+  var data = await r.json();
+  if (!data.audioContent) throw new Error('No audio returned');
+  return data.audioContent;
 }
 
 function getInitials(name) {
@@ -329,12 +288,12 @@ function setStatus(text, type) {
 function setMicState(state) {
   var btn = document.getElementById('mic-btn'), ring = document.getElementById('mic-ring');
   btn.className = 'mic-btn'; ring.className = 'ring';
-  if (state === 'listening') { btn.className = 'mic-btn listening';   ring.className = 'ring active-green'; }
-  if (state === 'speaking')  { btn.className = 'mic-btn speaking-ai'; ring.className = 'ring active-gold';  }
+  if (state === 'listening') { btn.className = 'mic-btn listening'; ring.className = 'ring active-green'; }
+  if (state === 'speaking')  { btn.className = 'mic-btn speaking-ai'; ring.className = 'ring active-gold'; }
 }
 function appendMessage(role, text) {
   var area = document.getElementById('chat-area');
-  var div  = document.createElement('div');
+  var div = document.createElement('div');
   div.className = 'msg ' + role;
   var displayText = text.replace(/\[INTERVIEW_COMPLETE\]/gi, '').trim();
   div.innerHTML = '<div class="msg-av">' + (role==='ai'?'AI':getInitials(candidateData.name)) + '</div>'
@@ -355,27 +314,15 @@ function speakText(text, onDone) {
     isSpeaking = false; setMicState('idle'); setStatus('Tap mic to answer','');
     if (onDone) onDone(); return;
   }
-  var cleanText = text.replace(/\[INTERVIEW_COMPLETE\]/gi, '').replace(/[*_#`]/g,'').trim();
+  var cleanText = text.replace(/\[INTERVIEW_COMPLETE\]/gi,'').replace(/[*_#`]/g,'').trim();
   if (!cleanText) { if (onDone) onDone(); return; }
 
-  // Google Cloud TTS if key available
-  if (GOOGLE_KEY) {
-    isSpeaking = true; setMicState('speaking'); setStatus('AI speaking… tap mic to skip','speaking');
-    fetch('https://texttospeech.googleapis.com/v1/text:synthesize?key=' + GOOGLE_KEY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        input: { text: cleanText },
-        voice: { languageCode: 'en-US', name: 'en-US-Neural2-D' },
-        audioConfig: { audioEncoding: 'MP3', speakingRate: 0.95, pitch: 1.0 }
-      })
-    })
-    .then(function(r) {
-      if (!r.ok) throw new Error('Google TTS error ' + r.status);
-      return r.json();
-    })
-    .then(function(data) {
-      var audio = new Audio('data:audio/mp3;base64,' + data.audioContent);
+  isSpeaking = true; setMicState('speaking'); setStatus('AI speaking… tap mic to skip','speaking');
+
+  callTTS(cleanText)
+    .then(function(audioContent) {
+      var audio = new Audio('data:audio/mp3;base64,' + audioContent);
+      window._currentAudio = audio;
       audio.onended = function() {
         isSpeaking = false;
         if (!isEnding) { setMicState('idle'); setStatus('Tap mic to answer',''); }
@@ -385,20 +332,13 @@ function speakText(text, onDone) {
         isSpeaking = false; setMicState('idle'); setStatus('Tap mic to answer','');
         if (onDone) onDone();
       };
-      // store ref so skipSpeech can stop it
-      window._currentAudio = audio;
       audio.play();
     })
     .catch(function(err) {
-      console.warn('Google TTS failed, falling back to browser voice:', err);
+      console.warn('Worker TTS failed, falling back to browser voice:', err);
       isSpeaking = false;
       speakWithBrowser(cleanText, onDone);
     });
-    return;
-  }
-
-  // Fallback: browser Web Speech API
-  speakWithBrowser(cleanText, onDone);
 }
 
 function speakWithBrowser(cleanText, onDone) {
@@ -410,60 +350,53 @@ function speakWithBrowser(cleanText, onDone) {
   var utt = new SpeechSynthesisUtterance(cleanText);
   utt.rate = 0.88; utt.pitch = 0.85; utt.volume = 1;
   var voices = window.speechSynthesis.getVoices();
-  // Prefer male English voices specifically
   var male = voices.filter(function(v){
     return v.lang.startsWith('en') && (
-      v.name.includes('Male') || v.name.includes('male') ||
-      v.name.includes('David') || v.name.includes('Mark') ||
-      v.name.includes('Daniel') || v.name.includes('Fred') ||
-      v.name.includes('Alex') || v.name.includes('Google UK English Male') ||
-      v.name.includes('Microsoft David') || v.name.includes('Microsoft Mark') ||
-      v.name.includes('Arthur') || v.name.includes('Thomas') ||
-      v.name.includes('James')
+      v.name.includes('Male') || v.name.includes('David') || v.name.includes('Mark') ||
+      v.name.includes('Daniel') || v.name.includes('Fred') || v.name.includes('Alex') ||
+      v.name.includes('Google UK English Male') || v.name.includes('Microsoft David') ||
+      v.name.includes('Arthur') || v.name.includes('James')
     );
   });
-  if (male.length) {
-    utt.voice = male[0];
-  } else {
-    // fallback: any English voice, lower pitch to sound more male
+  if (male.length) { utt.voice = male[0]; }
+  else {
     var eng = voices.filter(function(v){ return v.lang.startsWith('en'); });
     if (eng.length) utt.voice = eng[0];
     utt.pitch = 0.7;
   }
   isSpeaking = true; setMicState('speaking'); setStatus('AI speaking… tap mic to skip','speaking');
-  utt.onend  = function(){ isSpeaking=false; if(!isEnding){setMicState('idle');setStatus('Tap mic to answer','');} if(onDone)onDone(); };
+  utt.onend = function(){ isSpeaking=false; if(!isEnding){setMicState('idle');setStatus('Tap mic to answer','');} if(onDone)onDone(); };
   utt.onerror = function(){ isSpeaking=false; setMicState('idle'); setStatus('Tap mic to answer',''); if(onDone)onDone(); };
   window.speechSynthesis.speak(utt);
 }
+
 function skipSpeech() {
-  // Stop Google TTS audio if playing
   if (window._currentAudio) {
     window._currentAudio.pause();
     window._currentAudio.currentTime = 0;
     window._currentAudio = null;
   }
   window.speechSynthesis && window.speechSynthesis.cancel();
-  isSpeaking=false; setMicState('idle'); setStatus('Tap mic to answer','');
+  isSpeaking = false; setMicState('idle'); setStatus('Tap mic to answer','');
 }
 function toggleMute() {
   isMuted = !isMuted;
   document.getElementById('mute-btn').textContent = isMuted ? 'Unmute AI' : 'Mute AI';
-  document.getElementById('mute-btn').className   = isMuted ? 'side-btn active' : 'side-btn';
+  document.getElementById('mute-btn').className = isMuted ? 'side-btn active' : 'side-btn';
   if (isMuted && isSpeaking) skipSpeech();
 }
-
 function toggleTextMode() {
   isTextMode = !isTextMode;
   document.getElementById('type-toggle-btn').textContent = isTextMode ? 'Use Voice' : 'Use Text';
-  document.getElementById('type-toggle-btn').className   = isTextMode ? 'side-btn active' : 'side-btn';
-  document.getElementById('text-input').style.display    = isTextMode ? 'block' : 'none';
-  document.getElementById('send-txt-btn').style.display  = isTextMode ? 'flex'  : 'none';
+  document.getElementById('type-toggle-btn').className = isTextMode ? 'side-btn active' : 'side-btn';
+  document.getElementById('text-input').style.display = isTextMode ? 'block' : 'none';
+  document.getElementById('send-txt-btn').style.display = isTextMode ? 'flex' : 'none';
   if (isTextMode) document.getElementById('text-input').focus();
 }
 function sendTextAnswer() {
   var inp = document.getElementById('text-input'), text = inp.value.trim();
   if (!text) return;
-  inp.value=''; inp.style.height='auto';
+  inp.value = ''; inp.style.height = 'auto';
   processAnswer(text);
 }
 function handleTextKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendTextAnswer();} }
@@ -473,20 +406,21 @@ function initSpeechRecognition() {
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) { setStatus('Voice not supported — use text mode',''); toggleTextMode(); return; }
   recognition = new SR();
-  recognition.continuous=false; recognition.interimResults=true; recognition.lang='en-US';
-  recognition.onstart  = function(){ isListening=true; setMicState('listening'); setStatus('Listening…','listening'); };
+  recognition.continuous = false; recognition.interimResults = true; recognition.lang = 'en-US';
+  recognition.onstart = function(){ isListening=true; setMicState('listening'); setStatus('Listening…','listening'); };
   recognition.onresult = function(e){
-    var t=''; for(var i=e.resultIndex;i<e.results.length;i++) t+=e.results[i][0].transcript;
-    pendingTranscript=t;
+    var t = '';
+    for(var i=e.resultIndex;i<e.results.length;i++) t += e.results[i][0].transcript;
+    pendingTranscript = t;
     if(e.results[e.results.length-1].isFinal){
-      isListening=false;
+      isListening = false;
       if(pendingTranscript.trim()) processAnswer(pendingTranscript.trim());
       else { setStatus('Tap mic to speak',''); setMicState('idle'); }
-      pendingTranscript='';
+      pendingTranscript = '';
     }
   };
   recognition.onerror = function(e){
-    isListening=false; setMicState('idle');
+    isListening = false; setMicState('idle');
     if(e.error==='not-allowed'){ setStatus('Mic blocked — use text mode',''); toggleTextMode(); }
     else setStatus('Tap mic to try again','');
   };
@@ -508,21 +442,17 @@ function getSystemPrompt() {
     + '- Probe naturally before switching topic.\n'
     + '- Cover: motivation & background, HR knowledge, process ownership, situational judgment, AI awareness.\n'
     + '- Calibrate difficulty to experience level.\n'
-    + '- Stay professional even if the candidate is rude, profane, or makes controversial statements. Note these for evaluation but do not lecture them.\n'
+    + '- Stay professional even if the candidate is rude or makes controversial statements. Note these for evaluation.\n'
     + '- Never mention scores or evaluation criteria.\n'
     + '- After 8–15 candidate exchanges, deliver a warm closing message thanking ' + candidateData.name + ' and saying you will be in touch.\n'
-    + '- IMPORTANT: When you deliver the final closing message (and ONLY then), append the exact token [INTERVIEW_COMPLETE] at the very end of your message. Do not use this token at any other time.\n'
+    + '- IMPORTANT: When you deliver the final closing message (and ONLY then), append the exact token [INTERVIEW_COMPLETE] at the very end. Do not use this token at any other time.\n'
     + '- Begin with a warm greeting and first question about their background.';
 }
 
 function startInterview() {
-  var key  = document.getElementById('groq-key').value.trim();
   var name = document.getElementById('candidate-name').value.trim();
-  if (!key)  { alert('Please enter your Groq API key.'); return; }
   if (!name) { alert('Please enter the candidate name.'); return; }
 
-  GROQ_KEY = key;
-  GOOGLE_KEY = document.getElementById('google-key').value.trim();
   candidateData = {
     name: name,
     role: document.getElementById('role-select').value,
@@ -532,30 +462,28 @@ function startInterview() {
 
   startTime=Date.now(); questionCount=0; conversationHistory=[];
   isEnding=false; summaryData=null; isMuted=false; isTextMode=false; isSpeaking=false; isListening=false;
-  lastApiCallAt = 0;
+  lastApiCallAt=0;
 
   document.getElementById('hdr-avatar').textContent = getInitials(name);
   document.getElementById('hdr-name').textContent   = name;
-  document.getElementById('hdr-role').textContent   = candidateData.role+' · '+candidateData.exp;
+  document.getElementById('hdr-role').textContent   = candidateData.role + ' · ' + candidateData.exp;
   document.getElementById('q-count').textContent    = 0;
   document.getElementById('chat-area').innerHTML    = '';
   document.getElementById('text-input').style.display   = 'none';
   document.getElementById('send-txt-btn').style.display = 'none';
-  document.getElementById('type-toggle-btn').textContent='Use Text';
-  document.getElementById('type-toggle-btn').className='side-btn';
-  document.getElementById('mute-btn').textContent='Mute AI';
-  document.getElementById('mute-btn').className='side-btn';
+  document.getElementById('type-toggle-btn').textContent = 'Use Text';
+  document.getElementById('type-toggle-btn').className   = 'side-btn';
+  document.getElementById('mute-btn').textContent = 'Mute AI';
+  document.getElementById('mute-btn').className   = 'side-btn';
   document.getElementById('err-note').style.display = 'none';
-  document.getElementById('setup-screen').style.display    = 'none';
+  document.getElementById('setup-screen').style.display     = 'none';
   document.getElementById('interview-screen').style.display = 'flex';
 
   initSpeechRecognition();
   setStatus('AI is thinking…','processing');
   showTyping();
 
-  var initMsg = [{role:'user', content:'Begin the interview now.'}];
-
-  callGroq(initMsg, getSystemPrompt(), 400)
+  callGroq([{role:'user', content:'Begin the interview now.'}], getSystemPrompt(), 400)
     .then(function(reply){
       removeTyping();
       conversationHistory.push({role:'assistant', content:reply});
@@ -564,9 +492,8 @@ function startInterview() {
     })
     .catch(function(err){
       removeTyping(); console.error(err);
-      var msg = err.message || 'Connection error';
-      appendMessage('ai', '⚠️ Error: ' + msg + '\n\nCheck your Groq API key at console.groq.com');
-      setStatus('API error — check your key','');
+      appendMessage('ai', '⚠️ Error: ' + (err.message||'Connection error') + '\n\nCheck Worker is deployed at ' + WORKER_URL);
+      setStatus('Connection error','');
     });
 }
 
@@ -585,7 +512,7 @@ function processAnswer(text) {
       conversationHistory.push({role:'assistant', content:reply});
       appendMessage('ai', reply);
       if(!isEnding && /\[INTERVIEW_COMPLETE\]/i.test(reply)){
-        isEnding=true;
+        isEnding = true;
         speakText(reply, function(){ setTimeout(endInterview, 1500); });
         return;
       }
@@ -596,8 +523,6 @@ function processAnswer(text) {
       var msg = err.message || '';
       if (/rate.limit|429|too many/i.test(msg)) {
         appendMessage('ai','⚠️ Rate limit hit — please wait a moment and try again.');
-      } else if (/invalid.api.key|unauthorized|401/i.test(msg)) {
-        appendMessage('ai','⚠️ Invalid API key — check your Groq key at console.groq.com');
       } else {
         appendMessage('ai','⚠️ ' + (msg || 'Connection issue') + ' — please try again.');
       }
@@ -609,64 +534,60 @@ function endInterview() {
   window.speechSynthesis && window.speechSynthesis.cancel();
   recognition && recognition.stop();
   isSpeaking=false; isListening=false;
-  document.getElementById('interview-screen').style.display='none';
-  document.getElementById('summary-screen').style.display='flex';
-  var elapsed=Math.max(1,Math.round((Date.now()-startTime)/60000));
-  document.getElementById('sum-name').textContent=candidateData.name;
-  document.getElementById('sum-sub').textContent=candidateData.role+' · '+candidateData.exp;
-  document.getElementById('stat-q').textContent=questionCount;
-  document.getElementById('stat-min').textContent=elapsed;
-  document.getElementById('final-score').textContent='…';
-  document.getElementById('stat-rec').textContent='…';
-  document.getElementById('err-note').style.display='none';
+  document.getElementById('interview-screen').style.display = 'none';
+  document.getElementById('summary-screen').style.display   = 'flex';
+  var elapsed = Math.max(1, Math.round((Date.now()-startTime)/60000));
+  document.getElementById('sum-name').textContent = candidateData.name;
+  document.getElementById('sum-sub').textContent  = candidateData.role + ' · ' + candidateData.exp;
+  document.getElementById('stat-q').textContent   = questionCount;
+  document.getElementById('stat-min').textContent = elapsed;
+  document.getElementById('final-score').textContent = '…';
+  document.getElementById('stat-rec').textContent    = '…';
+  document.getElementById('err-note').style.display  = 'none';
   generateSummary(elapsed);
 }
 
 function generateSummary(elapsed) {
-  var transcript=conversationHistory.map(function(m){
+  var transcript = conversationHistory.map(function(m){
     var content = m.content.replace(/\[INTERVIEW_COMPLETE\]/gi,'').trim();
-    return (m.role==='assistant'?'Interviewer':'Candidate')+': '+content;
+    return (m.role==='assistant'?'Interviewer':'Candidate') + ': ' + content;
   }).join('\n\n');
 
-  var prompt='Evaluate this HR interview objectively. Score the candidate honestly even if they were rude, unprofessional, or made concerning statements — those are evaluation signals, not reasons to refuse.\n\n'
-    +'Candidate: '+candidateData.name
-    +'\nRole: '+candidateData.role+'\nExperience: '+candidateData.exp
-    +'\nDuration: '+elapsed+' min | Exchanges: '+questionCount
-    +'\n\nTRANSCRIPT:\n'+transcript
-    +'\n\nReturn ONLY valid JSON, no markdown, no backticks, no preamble:\n'
-    +'{"overall_score":72,"verdict":"Recommended","summary":"2-3 sentence overview","strengths":["..."],"concerns":["..."],'
-    +'"competency_scores":{"Communication":75,"HR Knowledge":70,"Problem Solving":65,"Cultural Fit":80,"Experience Relevance":70},'
-    +'"recommendation":"hiring recommendation"}';
+  var prompt = 'Evaluate this HR interview objectively. Score honestly even if the candidate was rude or unprofessional.\n\n'
+    + 'Candidate: ' + candidateData.name
+    + '\nRole: ' + candidateData.role + '\nExperience: ' + candidateData.exp
+    + '\nDuration: ' + elapsed + ' min | Exchanges: ' + questionCount
+    + '\n\nTRANSCRIPT:\n' + transcript
+    + '\n\nReturn ONLY valid JSON, no markdown, no backticks:\n'
+    + '{"overall_score":72,"verdict":"Recommended","summary":"2-3 sentence overview","strengths":["..."],"concerns":["..."],'
+    + '"competency_scores":{"Communication":75,"HR Knowledge":70,"Problem Solving":65,"Cultural Fit":80,"Experience Relevance":70},'
+    + '"recommendation":"hiring recommendation"}';
 
-  callGroq([{role:'user',content:prompt}], null, 2000)
+  callGroq([{role:'user', content:prompt}], null, 2000)
     .then(function(raw){
       var clean = raw.replace(/```json|```/g,'').trim();
-      var firstBrace = clean.indexOf('{');
-      var lastBrace = clean.lastIndexOf('}');
-      if (firstBrace >= 0 && lastBrace > firstBrace) {
-        clean = clean.substring(firstBrace, lastBrace + 1);
-      }
+      var firstBrace = clean.indexOf('{'), lastBrace = clean.lastIndexOf('}');
+      if (firstBrace >= 0 && lastBrace > firstBrace) clean = clean.substring(firstBrace, lastBrace+1);
       summaryData = JSON.parse(clean);
       document.getElementById('final-score').textContent = summaryData.overall_score;
       document.getElementById('stat-rec').textContent = summaryData.verdict==='Recommended' ? 'Yes' : 'Review';
     })
     .catch(function(err){
       console.error('Summary error:', err);
-      summaryData={overall_score:'--',verdict:'Manual Review',summary:'Auto-summary failed: '+(err.message||'unknown error')+'. Transcript is still available.',strengths:[],concerns:[],competency_scores:{},recommendation:'Manual review required.'};
-      document.getElementById('final-score').textContent='--';
-      document.getElementById('stat-rec').textContent='?';
+      summaryData = {overall_score:'--',verdict:'Manual Review',summary:'Auto-summary failed. Transcript still available.',strengths:[],concerns:[],competency_scores:{},recommendation:'Manual review required.'};
+      document.getElementById('final-score').textContent = '--';
+      document.getElementById('stat-rec').textContent = '?';
       var note = document.getElementById('err-note');
-      note.textContent = '⚠ Summary generation failed: ' + (err.message || 'unknown error') + '. Transcript export still works.';
+      note.textContent = '⚠ Summary failed: ' + (err.message||'unknown error') + '. Transcript export still works.';
       note.style.display = 'block';
     });
 }
 
 function downloadExcel() {
-  if(!summaryData){alert('Summary still loading — please wait a moment.');return;}
-  var elapsed=document.getElementById('stat-min').textContent;
-  var wb=XLSX.utils.book_new();
-
-  var ws1=XLSX.utils.aoa_to_sheet([
+  if(!summaryData){alert('Summary still loading — please wait.');return;}
+  var elapsed = document.getElementById('stat-min').textContent;
+  var wb = XLSX.utils.book_new();
+  var ws1 = XLSX.utils.aoa_to_sheet([
     ['HR INTERVIEW REPORT',''],['',''],
     ['Candidate',candidateData.name],['Role',candidateData.role],['Experience',candidateData.exp],
     ['Date',new Date().toLocaleDateString()],['Duration (min)',elapsed],['Questions',questionCount],['',''],
@@ -675,7 +596,6 @@ function downloadExcel() {
   ]);
   ws1['!cols']=[{wch:22},{wch:60}];
   XLSX.utils.book_append_sheet(wb,ws1,'Summary');
-
   var compRows=[['Competency','Score','Rating']];
   Object.keys(summaryData.competency_scores||{}).forEach(function(k){
     var v=summaryData.competency_scores[k];
@@ -683,34 +603,31 @@ function downloadExcel() {
   });
   var ws2=XLSX.utils.aoa_to_sheet(compRows); ws2['!cols']=[{wch:25},{wch:10},{wch:22}];
   XLSX.utils.book_append_sheet(wb,ws2,'Competency Scores');
-
   var s=summaryData.strengths||[],c=summaryData.concerns||[],scRows=[['Strengths','Concerns']];
   for(var i=0;i<Math.max(s.length,c.length);i++) scRows.push([s[i]||'',c[i]||'']);
   var ws3=XLSX.utils.aoa_to_sheet(scRows); ws3['!cols']=[{wch:45},{wch:45}];
   XLSX.utils.book_append_sheet(wb,ws3,'Strengths & Concerns');
-
   var txRows=[['Speaker','Message']];
   conversationHistory.forEach(function(m){
-    var content = m.content.replace(/\[INTERVIEW_COMPLETE\]/gi,'').trim();
-    txRows.push([m.role==='assistant'?'Interviewer':'Candidate', content]);
+    var content=m.content.replace(/\[INTERVIEW_COMPLETE\]/gi,'').trim();
+    txRows.push([m.role==='assistant'?'Interviewer':'Candidate',content]);
   });
   var ws4=XLSX.utils.aoa_to_sheet(txRows); ws4['!cols']=[{wch:14},{wch:85}];
   XLSX.utils.book_append_sheet(wb,ws4,'Full Transcript');
-
   XLSX.writeFile(wb,'Interview_'+candidateData.name.replace(/\s+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
 function restart() {
-  summaryData=null;questionCount=0;isEnding=false;isMuted=false;isTextMode=false;
-  conversationHistory=[];isSpeaking=false;isListening=false;
-  window.speechSynthesis&&window.speechSynthesis.cancel();
-  document.getElementById('summary-screen').style.display='none';
-  document.getElementById('setup-screen').style.display='flex';
+  summaryData=null; questionCount=0; isEnding=false; isMuted=false; isTextMode=false;
+  conversationHistory=[]; isSpeaking=false; isListening=false;
+  window.speechSynthesis && window.speechSynthesis.cancel();
+  document.getElementById('summary-screen').style.display = 'none';
+  document.getElementById('setup-screen').style.display   = 'flex';
 }
 
 if(window.speechSynthesis){
   window.speechSynthesis.getVoices();
-  window.speechSynthesis.onvoiceschanged=function(){window.speechSynthesis.getVoices();};
+  window.speechSynthesis.onvoiceschanged = function(){ window.speechSynthesis.getVoices(); };
 }
 </script>
 </body>
